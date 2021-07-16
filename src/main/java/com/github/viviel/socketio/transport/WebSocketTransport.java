@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -66,11 +66,10 @@ public class WebSocketTransport extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof CloseWebSocketFrame) {
             ctx.channel().writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE);
-        } else if (msg instanceof BinaryWebSocketFrame
-                   || msg instanceof TextWebSocketFrame) {
+        } else if (msg instanceof BinaryWebSocketFrame || msg instanceof TextWebSocketFrame) {
             ByteBufHolder frame = (ByteBufHolder) msg;
             ClientHead client = clientsBox.get(ctx.channel());
             if (client == null) {
@@ -79,7 +78,6 @@ public class WebSocketTransport extends ChannelInboundHandlerAdapter {
                 frame.release();
                 return;
             }
-
             ctx.pipeline().fireChannelRead(new PacketsMessage(client, frame.content(), Transport.WEBSOCKET));
             frame.release();
         } else if (msg instanceof FullHttpRequest) {
@@ -88,7 +86,6 @@ public class WebSocketTransport extends ChannelInboundHandlerAdapter {
             String path = queryDecoder.path();
             List<String> transport = queryDecoder.parameters().get("transport");
             List<String> sid = queryDecoder.parameters().get("sid");
-
             if (transport != null && NAME.equals(transport.get(0))) {
                 try {
                     if (!configuration.getTransports().contains(Transport.WEBSOCKET)) {
@@ -145,24 +142,24 @@ public class WebSocketTransport extends ChannelInboundHandlerAdapter {
 
     private void handshake(ChannelHandlerContext ctx, final UUID sessionId, String path, FullHttpRequest req) {
         final Channel channel = ctx.channel();
-
-        WebSocketServerHandshakerFactory factory =
-                new WebSocketServerHandshakerFactory(getWebSocketLocation(req), null, true, configuration.getMaxFramePayloadLength());
-        WebSocketServerHandshaker handshaker = factory.newHandshaker(req);
-        if (handshaker != null) {
-            ChannelFuture f = handshaker.handshake(channel, req);
-            f.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    if (!future.isSuccess()) {
-                        log.error("Can't handshake " + sessionId, future.cause());
-                        return;
-                    }
-
-                    channel.pipeline().addBefore(SocketIOChannelInitializer.WEB_SOCKET_TRANSPORT, SocketIOChannelInitializer.WEB_SOCKET_AGGREGATOR,
-                                                 new WebSocketFrameAggregator(configuration.getMaxFramePayloadLength()));
-                    connectClient(channel, sessionId);
+        WebSocketServerHandshakerFactory factory = new WebSocketServerHandshakerFactory(
+                getWebSocketLocation(req), null,
+                true, configuration.getMaxFramePayloadLength()
+        );
+        WebSocketServerHandshaker handShaker = factory.newHandshaker(req);
+        if (handShaker != null) {
+            ChannelFuture f = handShaker.handshake(channel, req);
+            f.addListener((ChannelFutureListener) future -> {
+                if (!future.isSuccess()) {
+                    log.error("Can't handshake " + sessionId, future.cause());
+                    return;
                 }
+                channel.pipeline().addBefore(
+                        SocketIOChannelInitializer.WEB_SOCKET_TRANSPORT,
+                        SocketIOChannelInitializer.WEB_SOCKET_AGGREGATOR,
+                        new WebSocketFrameAggregator(configuration.getMaxFramePayloadLength())
+                );
+                connectClient(channel, sessionId);
             });
         } else {
             WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
@@ -177,28 +174,21 @@ public class WebSocketTransport extends ChannelInboundHandlerAdapter {
             channel.close();
             return;
         }
-
         client.bindChannel(channel, Transport.WEBSOCKET);
-
         authorizeHandler.connect(client);
-
         if (client.getCurrentTransport() == Transport.POLLING) {
             SchedulerKey key = new SchedulerKey(SchedulerKey.Type.UPGRADE_TIMEOUT, sessionId);
-            scheduler.schedule(key, new Runnable() {
-                @Override
-                public void run() {
-                    ClientHead clientHead = clientsBox.get(sessionId);
-                    if (clientHead != null) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("client did not complete upgrade - closing transport");
-                        }
-                        clientHead.onChannelDisconnect();
+            scheduler.schedule(key, () -> {
+                ClientHead clientHead = clientsBox.get(sessionId);
+                if (clientHead != null) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("client did not complete upgrade - closing transport");
                     }
+                    clientHead.onChannelDisconnect();
                 }
             }, configuration.getUpgradeTimeout(), TimeUnit.MILLISECONDS);
         }
-
-        log.debug("сlient {} handshake completed", sessionId);
+        log.debug("client {} handshake completed", sessionId);
     }
 
     private String getWebSocketLocation(HttpRequest req) {

@@ -136,7 +136,7 @@ public class SocketIOServer implements EventManageable {
         log.info("Session store / pubsub factory used: {}", configCopy.getStoreFactory());
         initGroups();
 
-        pipelineFactory.start(configCopy, namespacesHub);
+        pipelineFactory.init(configCopy, namespacesHub);
 
         Class<? extends ServerChannel> channelClass = NioServerSocketChannel.class;
         if (configCopy.isUseLinuxNativeEpoll()) {

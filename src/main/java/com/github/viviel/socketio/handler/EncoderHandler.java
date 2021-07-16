@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,9 +63,9 @@ public class EncoderHandler extends ChannelOutboundHandlerAdapter {
     private static final Logger log = LoggerFactory.getLogger(EncoderHandler.class);
 
     private final PacketEncoder encoder;
+    private final Configuration configuration;
 
     private String version;
-    private Configuration configuration;
 
     public EncoderHandler(Configuration configuration, PacketEncoder encoder) throws IOException {
         this.encoder = encoder;
@@ -281,9 +281,9 @@ public class EncoderHandler extends ChannelOutboundHandlerAdapter {
      * - all of the operations succeed
      * The setChannelPromise method should be called after all the futures are added
      */
-    private class ChannelFutureList implements GenericFutureListener<Future<Void>> {
+    private static class ChannelFutureList implements GenericFutureListener<Future<Void>> {
 
-        private List<ChannelFuture> futureList = new ArrayList<ChannelFuture>();
+        private final List<ChannelFuture> futureList = new ArrayList<>();
         private ChannelPromise promise = null;
 
         private void cleanup() {

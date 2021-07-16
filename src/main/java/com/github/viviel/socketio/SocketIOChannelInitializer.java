@@ -43,7 +43,7 @@ import java.security.KeyStore;
 
 public class SocketIOChannelInitializer extends ChannelInitializer<Channel> implements DisconnectableHub {
 
-    public static final String SOCKETIO_ENCODER = "socketioEncoder";
+    public static final String SOCKET_IO_ENCODER = "socketioEncoder";
     public static final String WEB_SOCKET_TRANSPORT_COMPRESSION = "webSocketTransportCompression";
     public static final String WEB_SOCKET_TRANSPORT = "webSocketTransport";
     public static final String WEB_SOCKET_AGGREGATOR = "webSocketAggregator";
@@ -82,7 +82,7 @@ public class SocketIOChannelInitializer extends ChannelInitializer<Channel> impl
         scheduler.update(ctx);
     }
 
-    public void start(Configuration configuration, NamespacesHub namespacesHub) {
+    public void init(Configuration configuration, NamespacesHub namespacesHub) {
         this.configuration = configuration;
 
         ackManager = new AckManager(scheduler);
@@ -110,7 +110,6 @@ public class SocketIOChannelInitializer extends ChannelInitializer<Channel> impl
 
         PacketListener packetListener = new PacketListener(ackManager, namespacesHub, xhrPollingTransport, scheduler);
 
-
         packetHandler = new InPacketHandler(packetListener, decoder, namespacesHub, configuration.getExceptionListener());
 
         try {
@@ -126,7 +125,7 @@ public class SocketIOChannelInitializer extends ChannelInitializer<Channel> impl
     protected void initChannel(Channel ch) {
         ChannelPipeline pipeline = ch.pipeline();
         addSslHandler(pipeline);
-        addSocketioHandlers(pipeline);
+        addSocketIOHandlers(pipeline);
     }
 
     /**
@@ -147,24 +146,19 @@ public class SocketIOChannelInitializer extends ChannelInitializer<Channel> impl
      *
      * @param pipeline - channel pipeline
      */
-    protected void addSocketioHandlers(ChannelPipeline pipeline) {
+    protected void addSocketIOHandlers(ChannelPipeline pipeline) {
         pipeline.addLast(HTTP_REQUEST_DECODER, new HttpRequestDecoder());
         pipeline.addLast(HTTP_AGGREGATOR, new HttpObjectAggregator(configuration.getMaxHttpContentLength()) {
             @Override
-            protected Object newContinueResponse(HttpMessage start, int maxContentLength,
-                                                 ChannelPipeline pipeline) {
+            protected Object newContinueResponse(HttpMessage start, int maxContentLength, ChannelPipeline pipeline) {
                 return null;
             }
-
         });
         pipeline.addLast(HTTP_ENCODER, new HttpResponseEncoder());
-
         if (configuration.isHttpCompression()) {
             pipeline.addLast(HTTP_COMPRESSION, new HttpContentCompressor());
         }
-
         pipeline.addLast(PACKET_HANDLER, packetHandler);
-
         pipeline.addLast(AUTHORIZE_HANDLER, authorizeHandler);
         pipeline.addLast(XHR_POLLING_TRANSPORT, xhrPollingTransport);
         // TODO use single instance when https://github.com/netty/netty/issues/4755 will be resolved
@@ -172,9 +166,7 @@ public class SocketIOChannelInitializer extends ChannelInitializer<Channel> impl
             pipeline.addLast(WEB_SOCKET_TRANSPORT_COMPRESSION, new WebSocketServerCompressionHandler());
         }
         pipeline.addLast(WEB_SOCKET_TRANSPORT, webSocketTransport);
-
-        pipeline.addLast(SOCKETIO_ENCODER, encoderHandler);
-
+        pipeline.addLast(SOCKET_IO_ENCODER, encoderHandler);
         pipeline.addLast(WRONG_URL_HANDLER, wrongUrlHandler);
     }
 
