@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,17 +15,15 @@
  */
 package com.github.viviel.socketio.parser;
 
+import com.github.viviel.socketio.protocol.Packet;
+import com.github.viviel.socketio.protocol.PacketType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.github.viviel.socketio.protocol.Packet;
-import com.github.viviel.socketio.protocol.PacketType;
 
 public class EncoderConnectionPacketTest extends EncoderBaseTest {
 
@@ -34,7 +32,7 @@ public class EncoderConnectionPacketTest extends EncoderBaseTest {
 //        Packet packet = new Packet(PacketType.HEARTBEAT);
 //        ByteBuf result = Unpooled.buffer();
 //        encoder.encodePacket(packet, result);
-//        Assert.assertEquals("2::", result.toString(CharsetUtil.UTF_8));
+//        Assertions.assertEquals("2::", result.toString(CharsetUtil.UTF_8));
     }
 
     @Test
@@ -43,7 +41,7 @@ public class EncoderConnectionPacketTest extends EncoderBaseTest {
         packet.setNsp("/woot");
         ByteBuf result = Unpooled.buffer();
 //        encoder.encodePacket(packet, result);
-        Assert.assertEquals("0::/woot", result.toString(CharsetUtil.UTF_8));
+        Assertions.assertEquals("0::/woot", result.toString(CharsetUtil.UTF_8));
     }
 
     @Test
@@ -52,7 +50,7 @@ public class EncoderConnectionPacketTest extends EncoderBaseTest {
         packet.setNsp("/tobi");
         ByteBuf result = Unpooled.buffer();
 //        encoder.encodePacket(packet, result);
-        Assert.assertEquals("1::/tobi", result.toString(CharsetUtil.UTF_8));
+        Assertions.assertEquals("1::/tobi", result.toString(CharsetUtil.UTF_8));
     }
 
     @Test
@@ -62,7 +60,7 @@ public class EncoderConnectionPacketTest extends EncoderBaseTest {
 //        packet.setQs("?test=1");
         ByteBuf result = Unpooled.buffer();
 //        encoder.encodePacket(packet, result);
-        Assert.assertEquals("1::/test:?test=1", result.toString(CharsetUtil.UTF_8));
+        Assertions.assertEquals("1::/test:?test=1", result.toString(CharsetUtil.UTF_8));
     }
 
 }

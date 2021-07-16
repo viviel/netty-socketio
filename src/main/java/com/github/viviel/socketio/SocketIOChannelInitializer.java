@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,15 +63,15 @@ public class SocketIOChannelInitializer extends ChannelInitializer<Channel> impl
 
     private AckManager ackManager;
 
-    private ClientsBox clientsBox = new ClientsBox();
+    private final ClientsBox clientsBox = new ClientsBox();
+    private final WebSocketServerCompressionHandler webSocketTransportCompression = new WebSocketServerCompressionHandler();
+    private final CancelableScheduler scheduler = new HashedWheelTimeoutScheduler();
+
     private AuthorizeHandler authorizeHandler;
     private PollingTransport xhrPollingTransport;
     private WebSocketTransport webSocketTransport;
-    private WebSocketServerCompressionHandler webSocketTransportCompression = new WebSocketServerCompressionHandler();
     private EncoderHandler encoderHandler;
     private WrongUrlHandler wrongUrlHandler;
-
-    private CancelableScheduler scheduler = new HashedWheelTimeoutScheduler();
 
     private InPacketHandler packetHandler;
     private SSLContext sslContext;
@@ -123,7 +123,7 @@ public class SocketIOChannelInitializer extends ChannelInitializer<Channel> impl
     }
 
     @Override
-    protected void initChannel(Channel ch) throws Exception {
+    protected void initChannel(Channel ch) {
         ChannelPipeline pipeline = ch.pipeline();
         addSslHandler(pipeline);
         addSocketioHandlers(pipeline);
@@ -215,5 +215,4 @@ public class SocketIOChannelInitializer extends ChannelInitializer<Channel> impl
         factory.shutdown();
         scheduler.shutdown();
     }
-
 }

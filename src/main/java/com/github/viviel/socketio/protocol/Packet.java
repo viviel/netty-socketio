@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -66,11 +66,8 @@ public class Packet implements Serializable {
      * Get packet data
      *
      * @param <T> the type data
-     *
-     * <pre>
      * @return <b>json object</b> for PacketType.JSON type
      * <b>message</b> for PacketType.MESSAGE type
-     * </pre>
      */
     public <T> T getData() {
         return (T) data;
@@ -164,5 +161,4 @@ public class Packet implements Serializable {
     public String toString() {
         return "Packet [type=" + type + ", ackId=" + ackId + "]";
     }
-
 }

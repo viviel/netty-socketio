@@ -1,12 +1,12 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,46 +15,43 @@
  */
 package com.github.viviel.socketio.parser;
 
-import java.io.IOException;
-
-import io.netty.buffer.Unpooled;
-import io.netty.util.CharsetUtil;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import com.github.viviel.socketio.protocol.Packet;
 import com.github.viviel.socketio.protocol.PacketType;
+import io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-@Ignore
+import java.io.IOException;
+
 public class DecoderConnectionPacketTest extends DecoderBaseTest {
 
     @Test
     public void testDecodeHeartbeat() throws IOException {
         Packet packet = decoder.decodePackets(Unpooled.copiedBuffer("2:::", CharsetUtil.UTF_8), null);
-//        Assert.assertEquals(PacketType.HEARTBEAT, packet.getType());
+//        Assertions.assertEquals(PacketType.HEARTBEAT, packet.getType());
     }
 
     @Test
     public void testDecode() throws IOException {
         Packet packet = decoder.decodePackets(Unpooled.copiedBuffer("1::/tobi", CharsetUtil.UTF_8), null);
-        Assert.assertEquals(PacketType.CONNECT, packet.getType());
-        Assert.assertEquals("/tobi", packet.getNsp());
+        Assertions.assertEquals(PacketType.CONNECT, packet.getType());
+        Assertions.assertEquals("/tobi", packet.getNsp());
     }
 
     @Test
     public void testDecodeWithQueryString() throws IOException {
         Packet packet = decoder.decodePackets(Unpooled.copiedBuffer("1::/test:?test=1", CharsetUtil.UTF_8), null);
-        Assert.assertEquals(PacketType.CONNECT, packet.getType());
-        Assert.assertEquals("/test", packet.getNsp());
-//        Assert.assertEquals("?test=1", packet.getQs());
+        Assertions.assertEquals(PacketType.CONNECT, packet.getType());
+        Assertions.assertEquals("/test", packet.getNsp());
+//        Assertions.assertEquals("?test=1", packet.getQs());
     }
 
     @Test
     public void testDecodeDisconnection() throws IOException {
         Packet packet = decoder.decodePackets(Unpooled.copiedBuffer("0::/woot", CharsetUtil.UTF_8), null);
-        Assert.assertEquals(PacketType.DISCONNECT, packet.getType());
-        Assert.assertEquals("/woot", packet.getNsp());
+        Assertions.assertEquals(PacketType.DISCONNECT, packet.getType());
+        Assertions.assertEquals("/woot", packet.getNsp());
     }
 
 }

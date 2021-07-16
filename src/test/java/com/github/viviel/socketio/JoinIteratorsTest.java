@@ -1,12 +1,12 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,14 +15,13 @@
  */
 package com.github.viviel.socketio;
 
+import com.github.viviel.socketio.misc.CompositeIterable;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.github.viviel.socketio.misc.CompositeIterable;
 
 public class JoinIteratorsTest {
 
@@ -40,11 +39,9 @@ public class JoinIteratorsTest {
         for (Integer integer : iterators) {
             mainList.add(integer);
         }
-        Assert.assertEquals(list1.size() + list2.size(), mainList.size());
+        Assertions.assertEquals(list1.size() + list2.size(), mainList.size());
         mainList.removeAll(list1);
         mainList.removeAll(list2);
-        Assert.assertTrue(mainList.isEmpty());
-
+        Assertions.assertTrue(mainList.isEmpty());
     }
-
 }
