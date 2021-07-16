@@ -66,10 +66,10 @@ public class NamespaceClient implements SocketIOClient {
     }
 
     @Override
-    public void sendEvent(String name, Object... data) {
+    public void send(String event, Object... data) {
         Packet packet = new Packet(PacketType.MESSAGE);
         packet.setSubType(PacketType.EVENT);
-        packet.setName(name);
+        packet.setName(event);
         packet.setData(Arrays.asList(data));
         send(packet);
     }

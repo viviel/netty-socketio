@@ -25,5 +25,4 @@ public interface PubSubStore {
     void unsubscribe(PubSubType type);
 
     void shutdown();
-
 }

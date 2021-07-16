@@ -17,6 +17,7 @@ package com.github.viviel.socketio.namespace;
 
 import com.github.viviel.socketio.*;
 import com.github.viviel.socketio.annotation.ScannerEngine;
+import com.github.viviel.socketio.broadcast.operations.BroadcastAckCallback;
 import com.github.viviel.socketio.broadcast.operations.BroadcastOperations;
 import com.github.viviel.socketio.broadcast.operations.BroadcastOperationsFactory;
 import com.github.viviel.socketio.listener.*;
@@ -48,6 +49,7 @@ public class Namespace implements SocketIONamespace {
     private final Queue<DisconnectListener> disconnectListeners = new ConcurrentLinkedQueue<DisconnectListener>();
     private final Queue<PingListener> pingListeners = new ConcurrentLinkedQueue<PingListener>();
     private final Queue<EventInterceptor> eventInterceptors = new ConcurrentLinkedQueue<EventInterceptor>();
+    private final ConcurrentMap<String, BroadcastAckCallback<Object>> broadcastAck = PlatformDependent.newConcurrentHashMap();
 
     private final Map<UUID, SocketIOClient> allClients = PlatformDependent.newConcurrentHashMap();
     private final ConcurrentMap<String, Set<UUID>> roomClients = PlatformDependent.newConcurrentHashMap();
@@ -229,14 +231,14 @@ public class Namespace implements SocketIONamespace {
     @Override
     public BroadcastOperations getBroadcastOperations() {
         return broadcastOperationsFactory.getBroadcastOperations(
-                getName(), getName(), allClients.values(), storeFactory
+                getName(), getName(), allClients.values(), storeFactory, broadcastAck
         );
     }
 
     @Override
     public BroadcastOperations getRoomOperations(String room) {
         return broadcastOperationsFactory.getBroadcastOperations(
-                getName(), room, getRoomClients(room), storeFactory
+                getName(), room, getRoomClients(room), storeFactory, broadcastAck
         );
     }
 
@@ -375,4 +377,7 @@ public class Namespace implements SocketIONamespace {
         return allClients.get(uuid);
     }
 
+    public void addBroadcastAck(String event, BroadcastAckCallback<Object> ack) {
+        broadcastAck.put(event, ack);
+    }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,26 +25,29 @@ import com.github.viviel.socketio.store.pubsub.PubSubType;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.ConcurrentMap;
 
-/**
- * Author: liangjiaqi
- * Date: 2020/8/8 6:08 PM
- */
 public class SingleRoomBroadcastOperations implements BroadcastOperations {
+
     private final String namespace;
     private final String room;
     private final Iterable<SocketIOClient> clients;
     private final StoreFactory storeFactory;
+    private final ConcurrentMap<String, BroadcastAckCallback<Object>> broadcastAck;
 
-    public SingleRoomBroadcastOperations(String namespace, String room, Iterable<SocketIOClient> clients, StoreFactory storeFactory) {
+    public SingleRoomBroadcastOperations(
+            String namespace, String room, Iterable<SocketIOClient> clients, StoreFactory storeFactory,
+            ConcurrentMap<String, BroadcastAckCallback<Object>> broadcastAck
+    ) {
         super();
         this.namespace = namespace;
         this.room = room;
         this.clients = clients;
         this.storeFactory = storeFactory;
+        this.broadcastAck = broadcastAck;
     }
 
-    private void dispatch(Packet packet) {
+    private void push(Packet packet) {
         this.storeFactory.pubSubStore().publish(
                 PubSubType.DISPATCH,
                 new DispatchMessage(this.room, packet, this.namespace));
@@ -52,23 +55,13 @@ public class SingleRoomBroadcastOperations implements BroadcastOperations {
 
     @Override
     public Collection<SocketIOClient> getClients() {
-        return new IterableCollection<SocketIOClient>(clients);
+        return new IterableCollection<>(clients);
     }
 
     @Override
     public void send(Packet packet) {
-        for (SocketIOClient client : clients) {
-            client.send(packet);
-        }
         dispatch(packet);
-    }
-
-    @Override
-    public <T> void send(Packet packet, BroadcastAckCallback<T> ackCallback) {
-        for (SocketIOClient client : clients) {
-            client.send(packet, ackCallback.createClientCallback(client));
-        }
-        ackCallback.loopFinished();
+        push(packet);
     }
 
     @Override
@@ -79,46 +72,56 @@ public class SingleRoomBroadcastOperations implements BroadcastOperations {
     }
 
     @Override
-    public void sendEvent(String name, SocketIOClient excludedClient, Object... data) {
+    public void send(String event, SocketIOClient exclude, Object... data) {
         Packet packet = new Packet(PacketType.MESSAGE);
         packet.setSubType(PacketType.EVENT);
-        packet.setName(name);
+        packet.setName(event);
         packet.setData(Arrays.asList(data));
-
-        for (SocketIOClient client : clients) {
-            if (client.getSessionId().equals(excludedClient.getSessionId())) {
-                continue;
-            }
-            client.send(packet);
-        }
-        dispatch(packet);
+        doDispatch(packet, exclude);
+        push(packet);
     }
 
     @Override
-    public void sendEvent(String name, Object... data) {
+    public void send(String event, Object... data) {
         Packet packet = new Packet(PacketType.MESSAGE);
         packet.setSubType(PacketType.EVENT);
-        packet.setName(name);
+        packet.setName(event);
         packet.setData(Arrays.asList(data));
         send(packet);
     }
 
     @Override
-    public <T> void sendEvent(String name, Object data, BroadcastAckCallback<T> ackCallback) {
-        for (SocketIOClient client : clients) {
-            client.sendEvent(name, ackCallback.createClientCallback(client), data);
+    public void dispatch(Packet packet) {
+        doDispatch(packet, null);
+    }
+
+    private void doDispatch(Packet packet, SocketIOClient exclude) {
+        String event = packet.getName();
+        BroadcastAckCallback<Object> ack = broadcastAck.get(event);
+        if (ack == null) {
+            for (SocketIOClient client : clients) {
+                if (exclude != null && client.getSessionId().equals(exclude.getSessionId())) {
+                    continue;
+                }
+                client.send(packet);
+            }
+        } else {
+            for (SocketIOClient client : clients) {
+                if (exclude != null && client.getSessionId().equals(exclude.getSessionId())) {
+                    continue;
+                }
+                client.send(packet, ack.createClientCallback(client));
+            }
+            ack.loopFinished();
         }
-        ackCallback.loopFinished();
     }
 
     @Override
-    public <T> void sendEvent(String name, Object data, SocketIOClient excludedClient, BroadcastAckCallback<T> ackCallback) {
-        for (SocketIOClient client : clients) {
-            if (client.getSessionId().equals(excludedClient.getSessionId())) {
-                continue;
-            }
-            client.sendEvent(name, ackCallback.createClientCallback(client), data);
-        }
-        ackCallback.loopFinished();
+    public void dispatch(String event, Object... data) {
+        Packet packet = new Packet(PacketType.MESSAGE);
+        packet.setSubType(PacketType.EVENT);
+        packet.setName(event);
+        packet.setData(Arrays.asList(data));
+        dispatch(packet);
     }
 }

@@ -72,5 +72,4 @@ public class RedissonStoreFactory extends BaseStoreFactory {
     public <K, V> Map<K, V> createMap(String name) {
         return redisClient.getMap(name);
     }
-
 }

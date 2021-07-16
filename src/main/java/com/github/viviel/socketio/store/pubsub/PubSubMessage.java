@@ -30,5 +30,4 @@ public abstract class PubSubMessage implements Serializable {
     public void setNodeId(Long nodeId) {
         this.nodeId = nodeId;
     }
-
 }

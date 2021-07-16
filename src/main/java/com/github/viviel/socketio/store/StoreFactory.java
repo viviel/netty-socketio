@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,9 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- *
  * Creates a client Store and PubSubStore
- *
  */
 public interface StoreFactory extends Disconnectable {
 
@@ -40,5 +38,4 @@ public interface StoreFactory extends Disconnectable {
     void init(NamespacesHub namespacesHub, AuthorizeHandler authorizeHandler, JsonSupport jsonSupport);
 
     void shutdown();
-
 }

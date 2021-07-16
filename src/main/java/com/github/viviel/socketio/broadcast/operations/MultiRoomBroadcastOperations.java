@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,13 +22,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * author: liangjiaqi
- * date: 2020/8/8 6:02 PM
- */
 public class MultiRoomBroadcastOperations implements BroadcastOperations {
 
-    private Collection<BroadcastOperations> broadcastOperations;
+    private final Collection<BroadcastOperations> broadcastOperations;
 
     public MultiRoomBroadcastOperations(Collection<BroadcastOperations> broadcastOperations) {
         this.broadcastOperations = broadcastOperations;
@@ -36,10 +32,7 @@ public class MultiRoomBroadcastOperations implements BroadcastOperations {
 
     @Override
     public Collection<SocketIOClient> getClients() {
-        Set<SocketIOClient> clients = new HashSet<SocketIOClient>();
-        if (this.broadcastOperations == null || this.broadcastOperations.size() == 0) {
-            return clients;
-        }
+        Set<SocketIOClient> clients = new HashSet<>();
         for (BroadcastOperations b : this.broadcastOperations) {
             clients.addAll(b.getClients());
         }
@@ -47,72 +40,44 @@ public class MultiRoomBroadcastOperations implements BroadcastOperations {
     }
 
     @Override
-    public <T> void send(Packet packet, BroadcastAckCallback<T> ackCallback) {
-        if (this.broadcastOperations == null || this.broadcastOperations.size() == 0) {
-            return;
-        }
-        for (BroadcastOperations b : this.broadcastOperations) {
-            b.send(packet, ackCallback);
-        }
-    }
-
-    @Override
-    public void sendEvent(String name, SocketIOClient excludedClient, Object... data) {
-        if (this.broadcastOperations == null || this.broadcastOperations.size() == 0) {
-            return;
-        }
-        for (BroadcastOperations b : this.broadcastOperations) {
-            b.sendEvent(name, excludedClient, data);
-        }
-    }
-
-    @Override
-    public <T> void sendEvent(String name, Object data, BroadcastAckCallback<T> ackCallback) {
-        if (this.broadcastOperations == null || this.broadcastOperations.size() == 0) {
-            return;
-        }
-        for (BroadcastOperations b : this.broadcastOperations) {
-            b.sendEvent(name, data, ackCallback);
-        }
-    }
-
-    @Override
-    public <T> void sendEvent(String name, Object data, SocketIOClient excludedClient, BroadcastAckCallback<T> ackCallback) {
-        if (this.broadcastOperations == null || this.broadcastOperations.size() == 0) {
-            return;
-        }
-        for (BroadcastOperations b : this.broadcastOperations) {
-            b.sendEvent(name, data, excludedClient, ackCallback);
-        }
-    }
-
-    @Override
     public void send(Packet packet) {
-        if (this.broadcastOperations == null || this.broadcastOperations.size() == 0) {
-            return;
-        }
         for (BroadcastOperations b : this.broadcastOperations) {
             b.send(packet);
         }
     }
 
     @Override
-    public void disconnect() {
-        if (this.broadcastOperations == null || this.broadcastOperations.size() == 0) {
-            return;
+    public void send(String event, SocketIOClient exclude, Object... data) {
+        for (BroadcastOperations b : this.broadcastOperations) {
+            b.send(event, exclude, data);
         }
+    }
+
+    @Override
+    public void disconnect() {
         for (BroadcastOperations b : this.broadcastOperations) {
             b.disconnect();
         }
     }
 
     @Override
-    public void sendEvent(String name, Object... data) {
-        if (this.broadcastOperations == null || this.broadcastOperations.size() == 0) {
-            return;
-        }
+    public void send(String event, Object... data) {
         for (BroadcastOperations b : this.broadcastOperations) {
-            b.sendEvent(name, data);
+            b.send(event, data);
+        }
+    }
+
+    @Override
+    public void dispatch(Packet packet) {
+        for (BroadcastOperations e : this.broadcastOperations) {
+            e.dispatch(packet);
+        }
+    }
+
+    @Override
+    public void dispatch(String event, Object... data) {
+        for (BroadcastOperations e : this.broadcastOperations) {
+            e.dispatch(event, data);
         }
     }
 }

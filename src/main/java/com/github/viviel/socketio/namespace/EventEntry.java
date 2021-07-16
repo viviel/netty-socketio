@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class EventEntry<T> {
 
     private final Queue<DataListener<T>> listeners = new ConcurrentLinkedQueue<DataListener<T>>();
-    ;
 
     public EventEntry() {
         super();

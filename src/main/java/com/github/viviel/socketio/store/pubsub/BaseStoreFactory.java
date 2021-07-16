@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,70 +15,83 @@
  */
 package com.github.viviel.socketio.store.pubsub;
 
+import com.github.viviel.socketio.broadcast.operations.BroadcastOperations;
 import com.github.viviel.socketio.handler.AuthorizeHandler;
 import com.github.viviel.socketio.handler.ClientHead;
+import com.github.viviel.socketio.namespace.Namespace;
 import com.github.viviel.socketio.namespace.NamespacesHub;
 import com.github.viviel.socketio.protocol.JsonSupport;
 import com.github.viviel.socketio.store.StoreFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.UUID;
+
 public abstract class BaseStoreFactory implements StoreFactory {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private Long nodeId = (long) (Math.random() * 1000000);
+    private final Long nodeId = (long) (Math.random() * 1000000);
 
     protected Long getNodeId() {
         return nodeId;
     }
 
     @Override
-    public void init(final NamespacesHub namespacesHub, final AuthorizeHandler authorizeHandler, JsonSupport jsonSupport) {
-        pubSubStore().subscribe(PubSubType.DISCONNECT, new PubSubListener<DisconnectMessage>() {
-            @Override
-            public void onMessage(DisconnectMessage msg) {
-                log.debug("{} sessionId: {}", PubSubType.DISCONNECT, msg.getSessionId());
-            }
-        }, DisconnectMessage.class);
+    public void init(NamespacesHub namespacesHub, AuthorizeHandler authorizeHandler, JsonSupport jsonSupport) {
+        PubSubStore store = pubSubStore();
+        store.subscribe(PubSubType.CONNECT, msg -> initConnect(authorizeHandler, msg), ConnectMessage.class);
+        store.subscribe(PubSubType.DISCONNECT, this::initDisconnect, DisconnectMessage.class);
+        store.subscribe(PubSubType.DISPATCH, msg -> initDispatch(namespacesHub, msg), DispatchMessage.class);
+        store.subscribe(PubSubType.JOIN, msg -> initJoin(namespacesHub, msg), JoinLeaveMessage.class);
+        store.subscribe(PubSubType.LEAVE, msg -> initLeave(namespacesHub, msg), JoinLeaveMessage.class);
+    }
 
-        pubSubStore().subscribe(PubSubType.CONNECT, new PubSubListener<ConnectMessage>() {
-            @Override
-            public void onMessage(ConnectMessage msg) {
-                authorizeHandler.connect(msg.getSessionId());
-                log.debug("{} sessionId: {}", PubSubType.CONNECT, msg.getSessionId());
-            }
-        }, ConnectMessage.class);
+    protected void initConnect(AuthorizeHandler authorizeHandler, ConnectMessage msg) {
+        authorizeHandler.connect(msg.getSessionId());
+        log.debug("{} sessionId: {}", PubSubType.CONNECT, msg.getSessionId());
+    }
 
-        pubSubStore().subscribe(PubSubType.DISPATCH, new PubSubListener<DispatchMessage>() {
-            @Override
-            public void onMessage(DispatchMessage msg) {
-                String name = msg.getRoom();
+    protected void initDisconnect(DisconnectMessage msg) {
+        UUID sessionId = msg.getSessionId();
+        log.debug("{} sessionId: {}", PubSubType.DISCONNECT, sessionId);
+    }
 
-                namespacesHub.get(msg.getNamespace()).dispatch(name, msg.getPacket());
-                log.debug("{} packet: {}", PubSubType.DISPATCH, msg.getPacket());
-            }
-        }, DispatchMessage.class);
+    protected void initDispatch(NamespacesHub namespacesHub, DispatchMessage msg) {
+        String room = msg.getRoom();
+        String namespaceName = msg.getNamespace();
+        Namespace namespace = namespacesHub.get(namespaceName);
+        if (namespace == null) {
+            log.error("{}, could not find namespace. package: {}", PubSubType.DISPATCH, msg.getPacket());
+            return;
+        }
+        BroadcastOperations operations = namespace.getRoomOperations(room);
+        operations.dispatch(msg.getPacket());
+        log.debug("{} packet: {}", PubSubType.DISPATCH, msg.getPacket());
+    }
 
-        pubSubStore().subscribe(PubSubType.JOIN, new PubSubListener<JoinLeaveMessage>() {
-            @Override
-            public void onMessage(JoinLeaveMessage msg) {
-                String name = msg.getRoom();
+    protected void initJoin(NamespacesHub namespacesHub, JoinLeaveMessage msg) {
+        String room = msg.getRoom();
+        String namespaceName = msg.getNamespace();
+        Namespace namespace = namespacesHub.get(namespaceName);
+        if (namespace == null) {
+            log.error("{}, could not find namespace. sessionId: {}", PubSubType.JOIN, msg.getSessionId());
+            return;
+        }
+        namespace.join(room, msg.getSessionId());
+        log.debug("{} sessionId: {}", PubSubType.JOIN, msg.getSessionId());
+    }
 
-                namespacesHub.get(msg.getNamespace()).join(name, msg.getSessionId());
-                log.debug("{} sessionId: {}", PubSubType.JOIN, msg.getSessionId());
-            }
-        }, JoinLeaveMessage.class);
-
-        pubSubStore().subscribe(PubSubType.LEAVE, new PubSubListener<JoinLeaveMessage>() {
-            @Override
-            public void onMessage(JoinLeaveMessage msg) {
-                String name = msg.getRoom();
-
-                namespacesHub.get(msg.getNamespace()).leave(name, msg.getSessionId());
-                log.debug("{} sessionId: {}", PubSubType.LEAVE, msg.getSessionId());
-            }
-        }, JoinLeaveMessage.class);
+    protected void initLeave(NamespacesHub namespacesHub, JoinLeaveMessage msg) {
+        String room = msg.getRoom();
+        String namespaceName = msg.getNamespace();
+        Namespace namespace = namespacesHub.get(namespaceName);
+        if (namespace == null) {
+            log.error("{}, could not find namespace. sessionId: {}", PubSubType.LEAVE, msg.getSessionId());
+            return;
+        }
+        namespace.leave(room, msg.getSessionId());
+        log.debug("{} sessionId: {}", PubSubType.LEAVE, msg.getSessionId());
     }
 
     @Override
@@ -92,5 +105,4 @@ public abstract class BaseStoreFactory implements StoreFactory {
     public String toString() {
         return getClass().getSimpleName() + " (distributed session store, distributed publish/subscribe)";
     }
-
 }

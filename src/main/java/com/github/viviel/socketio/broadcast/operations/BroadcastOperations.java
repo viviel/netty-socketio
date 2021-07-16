@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,18 +23,14 @@ import java.util.Collection;
 
 /**
  * broadcast interface
- *
  */
 public interface BroadcastOperations extends ClientOperations {
 
     Collection<SocketIOClient> getClients();
 
-    <T> void send(Packet packet, BroadcastAckCallback<T> ackCallback);
+    void send(String event, SocketIOClient exclude, Object... data);
 
-    void sendEvent(String name, SocketIOClient excludedClient, Object... data);
+    void dispatch(Packet packet);
 
-    <T> void sendEvent(String name, Object data, BroadcastAckCallback<T> ackCallback);
-
-    <T> void sendEvent(String name, Object data, SocketIOClient excludedClient, BroadcastAckCallback<T> ackCallback);
-
+    void dispatch(String event, Object... data);
 }

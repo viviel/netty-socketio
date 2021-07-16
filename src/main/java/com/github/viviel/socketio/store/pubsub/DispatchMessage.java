@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,5 +45,4 @@ public class DispatchMessage extends PubSubMessage {
     public String getRoom() {
         return room;
     }
-
 }

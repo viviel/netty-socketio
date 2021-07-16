@@ -25,7 +25,7 @@ public interface ClientOperations {
 
     /**
      * Send custom packet.
-     * But {@link ClientOperations#sendEvent} method
+     * But {@link ClientOperations#send} method
      * usage is enough for most cases.
      *
      * @param packet - packet to send
@@ -41,9 +41,8 @@ public interface ClientOperations {
     /**
      * Send event
      *
-     * @param name - event name
+     * @param event - event name
      * @param data - event data
      */
-    void sendEvent(String name, Object... data);
-
+    void send(String event, Object... data);
 }

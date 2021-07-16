@@ -35,10 +35,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Fully thread-safe.
@@ -99,15 +99,10 @@ public class SocketIOServer implements ClientListeners {
 
     public BroadcastOperations getBroadcastOperations() {
         Collection<SocketIONamespace> namespaces = namespacesHub.getAllNamespaces();
-        List<BroadcastOperations> list = new ArrayList<BroadcastOperations>();
-        BroadcastOperations broadcast;
-        if (namespaces != null && namespaces.size() > 0) {
-            for (SocketIONamespace n : namespaces) {
-                broadcast = n.getBroadcastOperations();
-                list.add(broadcast);
-            }
-        }
-        return new MultiRoomBroadcastOperations(list);
+        List<BroadcastOperations> broadcastOperations = namespaces.stream()
+                .map(SocketIONamespace::getBroadcastOperations)
+                .collect(Collectors.toList());
+        return new MultiRoomBroadcastOperations(broadcastOperations);
     }
 
     /**
@@ -119,15 +114,10 @@ public class SocketIOServer implements ClientListeners {
      */
     public BroadcastOperations getRoomOperations(String room) {
         Collection<SocketIONamespace> namespaces = namespacesHub.getAllNamespaces();
-        List<BroadcastOperations> list = new ArrayList<BroadcastOperations>();
-        BroadcastOperations broadcast;
-        if (namespaces != null && namespaces.size() > 0) {
-            for (SocketIONamespace n : namespaces) {
-                broadcast = n.getRoomOperations(room);
-                list.add(broadcast);
-            }
-        }
-        return new MultiRoomBroadcastOperations(list);
+        List<BroadcastOperations> broadcastOperations = namespaces.stream()
+                .map(e -> e.getRoomOperations(room))
+                .collect(Collectors.toList());
+        return new MultiRoomBroadcastOperations(broadcastOperations);
     }
 
     /**
@@ -253,7 +243,6 @@ public class SocketIOServer implements ClientListeners {
 
     }
 
-
     @Override
     public void removeAllListeners(String eventName) {
         mainNamespace.removeAllListeners(eventName);
@@ -283,6 +272,4 @@ public class SocketIOServer implements ClientListeners {
     public void addListeners(Object listeners, Class<?> listenersClass) {
         mainNamespace.addListeners(listeners, listenersClass);
     }
-
-
 }
