@@ -377,6 +377,7 @@ public class Namespace implements SocketIONamespace {
         return allClients.get(uuid);
     }
 
+    @Override
     public void addBroadcastAck(String event, BroadcastAckCallback<Object> ack) {
         broadcastAck.put(event, ack);
     }

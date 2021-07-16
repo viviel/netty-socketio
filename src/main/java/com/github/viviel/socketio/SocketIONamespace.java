@@ -15,6 +15,7 @@
  */
 package com.github.viviel.socketio;
 
+import com.github.viviel.socketio.broadcast.operations.BroadcastAckCallback;
 import com.github.viviel.socketio.broadcast.operations.BroadcastOperations;
 import com.github.viviel.socketio.listener.ClientListeners;
 
@@ -48,4 +49,5 @@ public interface SocketIONamespace extends ClientListeners {
      */
     SocketIOClient getClient(UUID uuid);
 
+    void addBroadcastAck(String event, BroadcastAckCallback<Object> ack);
 }
