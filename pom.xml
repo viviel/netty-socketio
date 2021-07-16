@@ -8,10 +8,12 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <name>NettySocketIOX</name>
-    <description>Socket.IO server implemented on Java. Improvement based on netty-socketio</description>
+    <description>
+        Socket.IO server implemented on Java. Improvement based on netty-socketio.
+        https://github.com/mrniko/netty-socketio
+    </description>
     <inceptionYear>2021</inceptionYear>
     <url>https://github.com/viviel/netty-socketio</url>
-    <url>https://github.com/mrniko/netty-socketio</url>
 
     <scm>
         <url>scm:git:git@github.com:mrniko/netty-socketio.git</url>
@@ -220,7 +222,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <linkXref>true</linkXref>
+                    <linkXRef>true</linkXRef>
                     <minimumTokens>100</minimumTokens>
                     <targetJdk>1.6</targetJdk>
                     <verbose>true</verbose>
@@ -253,7 +255,7 @@
                     <source>1.8</source>
                     <target>1.8</target>
                     <optimize>true</optimize>
-                    <showDeprecations>true</showDeprecations>
+                    <showDeprecation>true</showDeprecation>
                 </configuration>
             </plugin>
 
