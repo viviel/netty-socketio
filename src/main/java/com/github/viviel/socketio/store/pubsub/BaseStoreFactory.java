@@ -15,7 +15,6 @@
  */
 package com.github.viviel.socketio.store.pubsub;
 
-import com.github.viviel.socketio.broadcast.operations.BroadcastOperations;
 import com.github.viviel.socketio.handler.AuthorizeHandler;
 import com.github.viviel.socketio.handler.ClientHead;
 import com.github.viviel.socketio.namespace.Namespace;
@@ -65,8 +64,7 @@ public abstract class BaseStoreFactory implements StoreFactory {
             log.error("{}, could not find namespace. package: {}", PubSubType.DISPATCH, msg.getPacket());
             return;
         }
-        BroadcastOperations operations = namespace.getRoomOperations(room);
-        operations.dispatch(msg.getPacket());
+        namespace.dispatch(room, msg.getPacket());
         log.debug("{} packet: {}", PubSubType.DISPATCH, msg.getPacket());
     }
 

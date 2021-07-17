@@ -30,6 +30,7 @@ public class Packet implements Serializable {
     private PacketType type;
     private PacketType subType;
     private Long ackId;
+    private String broadcastCallbackName;
     private String name;
     private String nsp = Namespace.DEFAULT_NAME;
     private Object data;
@@ -44,6 +45,31 @@ public class Packet implements Serializable {
     public Packet(PacketType type) {
         super();
         this.type = type;
+    }
+
+    /**
+     * Creates a copy of #{@link Packet} with new namespace set
+     * if it differs from current namespace.
+     * Otherwise, returns original object unchanged
+     *
+     * @return packet
+     */
+    public Packet withNsp(String namespace) {
+        if (this.nsp.equalsIgnoreCase(namespace)) {
+            return this;
+        } else {
+            Packet newPacket = new Packet(this.type);
+            newPacket.setAckId(this.ackId);
+            newPacket.setBroadcastCallbackName(this.broadcastCallbackName);
+            newPacket.setData(this.data);
+            newPacket.setDataSource(this.dataSource);
+            newPacket.setName(this.name);
+            newPacket.setSubType(this.subType);
+            newPacket.setNsp(namespace);
+            newPacket.attachments = this.attachments;
+            newPacket.attachmentsCount = this.attachmentsCount;
+            return newPacket;
+        }
     }
 
     public PacketType getSubType() {
@@ -73,31 +99,6 @@ public class Packet implements Serializable {
         return (T) data;
     }
 
-    /**
-     * Creates a copy of #{@link Packet} with new namespace set
-     * if it differs from current namespace.
-     * Otherwise, returns original object unchanged
-     *
-     * @param namespace
-     * @return packet
-     */
-    public Packet withNsp(String namespace) {
-        if (this.nsp.equalsIgnoreCase(namespace)) {
-            return this;
-        } else {
-            Packet newPacket = new Packet(this.type);
-            newPacket.setAckId(this.ackId);
-            newPacket.setData(this.data);
-            newPacket.setDataSource(this.dataSource);
-            newPacket.setName(this.name);
-            newPacket.setSubType(this.subType);
-            newPacket.setNsp(namespace);
-            newPacket.attachments = this.attachments;
-            newPacket.attachmentsCount = this.attachmentsCount;
-            return newPacket;
-        }
-    }
-
     public void setNsp(String endpoint) {
         this.nsp = endpoint;
     }
@@ -120,6 +121,14 @@ public class Packet implements Serializable {
 
     public void setAckId(Long ackId) {
         this.ackId = ackId;
+    }
+
+    public String getBroadcastCallbackName() {
+        return broadcastCallbackName;
+    }
+
+    public void setBroadcastCallbackName(String broadcastCallbackName) {
+        this.broadcastCallbackName = broadcastCallbackName;
     }
 
     public boolean isAckRequested() {

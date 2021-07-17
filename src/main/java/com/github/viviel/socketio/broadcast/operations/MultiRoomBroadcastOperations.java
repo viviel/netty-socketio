@@ -31,12 +31,10 @@ public class MultiRoomBroadcastOperations implements BroadcastOperations {
     }
 
     @Override
-    public Collection<SocketIOClient> getClients() {
-        Set<SocketIOClient> clients = new HashSet<>();
+    public void disconnect() {
         for (BroadcastOperations b : this.broadcastOperations) {
-            clients.addAll(b.getClients());
+            b.disconnect();
         }
-        return clients;
     }
 
     @Override
@@ -47,6 +45,22 @@ public class MultiRoomBroadcastOperations implements BroadcastOperations {
     }
 
     @Override
+    public void send(String event, Object... data) {
+        for (BroadcastOperations b : this.broadcastOperations) {
+            b.send(event, data);
+        }
+    }
+
+    @Override
+    public Collection<SocketIOClient> getClients() {
+        Set<SocketIOClient> clients = new HashSet<>();
+        for (BroadcastOperations b : this.broadcastOperations) {
+            clients.addAll(b.getClients());
+        }
+        return clients;
+    }
+
+    @Override
     public void send(String event, SocketIOClient exclude, Object... data) {
         for (BroadcastOperations b : this.broadcastOperations) {
             b.send(event, exclude, data);
@@ -54,16 +68,9 @@ public class MultiRoomBroadcastOperations implements BroadcastOperations {
     }
 
     @Override
-    public void disconnect() {
+    public void send(String event, String callbackName, SocketIOClient exclude, Object... data) {
         for (BroadcastOperations b : this.broadcastOperations) {
-            b.disconnect();
-        }
-    }
-
-    @Override
-    public void send(String event, Object... data) {
-        for (BroadcastOperations b : this.broadcastOperations) {
-            b.send(event, data);
+            b.send(event, callbackName, exclude, data);
         }
     }
 
@@ -78,6 +85,13 @@ public class MultiRoomBroadcastOperations implements BroadcastOperations {
     public void dispatch(String event, Object... data) {
         for (BroadcastOperations e : this.broadcastOperations) {
             e.dispatch(event, data);
+        }
+    }
+
+    @Override
+    public void dispatch(String event, String callbackName, Object... data) {
+        for (BroadcastOperations e : this.broadcastOperations) {
+            e.dispatch(event, callbackName, data);
         }
     }
 }

@@ -49,7 +49,7 @@ public class Namespace implements SocketIONamespace {
     private final Queue<DisconnectListener> disconnectListeners = new ConcurrentLinkedQueue<DisconnectListener>();
     private final Queue<PingListener> pingListeners = new ConcurrentLinkedQueue<PingListener>();
     private final Queue<EventInterceptor> eventInterceptors = new ConcurrentLinkedQueue<EventInterceptor>();
-    private final ConcurrentMap<String, BroadcastAckCallback<Object>> broadcastAck = PlatformDependent.newConcurrentHashMap();
+    private final ConcurrentMap<String, BroadcastAckCallback<?>> broadcastCallback = PlatformDependent.newConcurrentHashMap();
 
     private final Map<UUID, SocketIOClient> allClients = PlatformDependent.newConcurrentHashMap();
     private final ConcurrentMap<String, Set<UUID>> roomClients = PlatformDependent.newConcurrentHashMap();
@@ -231,14 +231,14 @@ public class Namespace implements SocketIONamespace {
     @Override
     public BroadcastOperations getBroadcastOperations() {
         return broadcastOperationsFactory.getBroadcastOperations(
-                getName(), getName(), allClients.values(), storeFactory, broadcastAck
+                getName(), getName(), allClients.values(), storeFactory, broadcastCallback
         );
     }
 
     @Override
     public BroadcastOperations getRoomOperations(String room) {
         return broadcastOperationsFactory.getBroadcastOperations(
-                getName(), room, getRoomClients(room), storeFactory, broadcastAck
+                getName(), room, getRoomClients(room), storeFactory, broadcastCallback
         );
     }
 
@@ -283,11 +283,8 @@ public class Namespace implements SocketIONamespace {
     }
 
     public void dispatch(String room, Packet packet) {
-        Iterable<SocketIOClient> clients = getRoomClients(room);
-
-        for (SocketIOClient socketIOClient : clients) {
-            socketIOClient.send(packet);
-        }
+        BroadcastOperations op = getRoomOperations(room);
+        op.dispatch(packet);
     }
 
     private <K, V> void join(ConcurrentMap<K, Set<V>> map, K key, V value) {
@@ -378,7 +375,7 @@ public class Namespace implements SocketIONamespace {
     }
 
     @Override
-    public void addBroadcastAck(String event, BroadcastAckCallback<Object> ack) {
-        broadcastAck.put(event, ack);
+    public void addBroadcastAck(String ackName, BroadcastAckCallback<Object> ack) {
+        broadcastCallback.put(ackName, ack);
     }
 }

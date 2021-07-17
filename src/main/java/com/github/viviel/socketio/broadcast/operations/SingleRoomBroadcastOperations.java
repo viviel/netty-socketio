@@ -33,35 +33,24 @@ public class SingleRoomBroadcastOperations implements BroadcastOperations {
     private final String room;
     private final Iterable<SocketIOClient> clients;
     private final StoreFactory storeFactory;
-    private final ConcurrentMap<String, BroadcastAckCallback<Object>> broadcastAck;
+    private final ConcurrentMap<String, BroadcastAckCallback<?>> broadcastCallback;
 
     public SingleRoomBroadcastOperations(
             String namespace, String room, Iterable<SocketIOClient> clients, StoreFactory storeFactory,
-            ConcurrentMap<String, BroadcastAckCallback<Object>> broadcastAck
+            ConcurrentMap<String, BroadcastAckCallback<?>> broadcastCallback
     ) {
         super();
         this.namespace = namespace;
         this.room = room;
         this.clients = clients;
         this.storeFactory = storeFactory;
-        this.broadcastAck = broadcastAck;
+        this.broadcastCallback = broadcastCallback;
     }
 
     private void push(Packet packet) {
         this.storeFactory.pubSubStore().publish(
                 PubSubType.DISPATCH,
                 new DispatchMessage(this.room, packet, this.namespace));
-    }
-
-    @Override
-    public Collection<SocketIOClient> getClients() {
-        return new IterableCollection<>(clients);
-    }
-
-    @Override
-    public void send(Packet packet) {
-        dispatch(packet);
-        push(packet);
     }
 
     @Override
@@ -72,12 +61,8 @@ public class SingleRoomBroadcastOperations implements BroadcastOperations {
     }
 
     @Override
-    public void send(String event, SocketIOClient exclude, Object... data) {
-        Packet packet = new Packet(PacketType.MESSAGE);
-        packet.setSubType(PacketType.EVENT);
-        packet.setName(event);
-        packet.setData(Arrays.asList(data));
-        doDispatch(packet, exclude);
+    public void send(Packet packet) {
+        dispatch(packet);
         push(packet);
     }
 
@@ -91,36 +76,84 @@ public class SingleRoomBroadcastOperations implements BroadcastOperations {
     }
 
     @Override
+    public Collection<SocketIOClient> getClients() {
+        return new IterableCollection<>(clients);
+    }
+
+    @Override
+    public void send(String event, SocketIOClient exclude, Object... data) {
+        Packet packet = new Packet(PacketType.MESSAGE);
+        packet.setSubType(PacketType.EVENT);
+        packet.setName(event);
+        packet.setData(Arrays.asList(data));
+        doDispatch(packet, exclude);
+        push(packet);
+    }
+
+    @Override
+    public void send(String event, String callbackName, SocketIOClient exclude, Object... data) {
+        Packet packet = new Packet(PacketType.MESSAGE);
+        packet.setSubType(PacketType.EVENT);
+        packet.setBroadcastCallbackName(callbackName);
+        packet.setName(event);
+        packet.setData(Arrays.asList(data));
+        doDispatch(packet, exclude);
+        push(packet);
+    }
+
+    @Override
     public void dispatch(Packet packet) {
         doDispatch(packet, null);
     }
 
     private void doDispatch(Packet packet, SocketIOClient exclude) {
-        String event = packet.getName();
-        Object data = packet.getData();
-        BroadcastAckCallback<Object> ack = broadcastAck.get(event);
-        if (ack == null) {
-            for (SocketIOClient client : clients) {
-                if (exclude != null && client.getSessionId().equals(exclude.getSessionId())) {
-                    continue;
-                }
-                client.send(packet);
-            }
+        String ackName = packet.getBroadcastCallbackName();
+        if (ackName == null) {
+            doDispatch0(packet, exclude);
         } else {
-            for (SocketIOClient client : clients) {
-                if (exclude != null && client.getSessionId().equals(exclude.getSessionId())) {
-                    continue;
-                }
-                client.send(packet, ack.createClientCallback(client, data));
+            BroadcastAckCallback<?> ack = broadcastCallback.get(ackName);
+            if (ack == null) {
+                doDispatch0(packet, exclude);
+            } else {
+                doDispatch0(packet, exclude, ack);
             }
-            ack.loopFinished();
         }
+    }
+
+    private void doDispatch0(Packet packet, SocketIOClient exclude) {
+        for (SocketIOClient client : clients) {
+            if (exclude != null && client.getSessionId().equals(exclude.getSessionId())) {
+                continue;
+            }
+            client.send(packet);
+        }
+    }
+
+    private void doDispatch0(Packet packet, SocketIOClient exclude, BroadcastAckCallback<?> callback) {
+        Object data = packet.getData();
+        for (SocketIOClient client : clients) {
+            if (exclude != null && client.getSessionId().equals(exclude.getSessionId())) {
+                continue;
+            }
+            client.send(packet, callback.createClientCallback(client, data));
+        }
+        callback.loopFinished();
     }
 
     @Override
     public void dispatch(String event, Object... data) {
         Packet packet = new Packet(PacketType.MESSAGE);
         packet.setSubType(PacketType.EVENT);
+        packet.setName(event);
+        packet.setData(Arrays.asList(data));
+        dispatch(packet);
+    }
+
+    @Override
+    public void dispatch(String event, String callbackName, Object... data) {
+        Packet packet = new Packet(PacketType.MESSAGE);
+        packet.setSubType(PacketType.EVENT);
+        packet.setBroadcastCallbackName(callbackName);
         packet.setName(event);
         packet.setData(Arrays.asList(data));
         dispatch(packet);

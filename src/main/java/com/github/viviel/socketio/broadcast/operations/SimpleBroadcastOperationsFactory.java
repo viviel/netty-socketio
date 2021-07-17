@@ -10,7 +10,7 @@ public class SimpleBroadcastOperationsFactory implements BroadcastOperationsFact
     @Override
     public BroadcastOperations getBroadcastOperations(
             String namespace, String room, Iterable<SocketIOClient> clients, StoreFactory storeFactory,
-            ConcurrentMap<String, BroadcastAckCallback<Object>> broadcastAck
+            ConcurrentMap<String, BroadcastAckCallback<?>> broadcastAck
     ) {
         return new SingleRoomBroadcastOperations(namespace, room, clients, storeFactory, broadcastAck);
     }

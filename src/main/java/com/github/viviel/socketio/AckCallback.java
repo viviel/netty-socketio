@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,25 +15,22 @@
  */
 package com.github.viviel.socketio;
 
-
 /**
  * Base ack callback class.
- *
+ * <p>
  * Notifies about acknowledgement received from client
  * via {@link #onSuccess} callback method.
- *
+ * <p>
  * By default it may wait acknowledgement from client
  * while {@link SocketIOClient} is alive. Timeout can be
  * defined {@link #timeout} as constructor argument.
- *
+ * <p>
  * This object is NOT actual anymore if {@link #onSuccess} or
  * {@link #onTimeout} was executed.
  *
  * @param <T> - any serializable type
- *
  * @see VoidAckCallback
  * @see MultiTypeAckCallback
- *
  */
 public abstract class AckCallback<T> {
 
@@ -53,7 +50,7 @@ public abstract class AckCallback<T> {
      * Creates AckCallback with timeout
      *
      * @param resultClass - result class
-     * @param timeout - callback timeout in seconds
+     * @param timeout     - callback timeout in seconds
      */
     public AckCallback(Class<T> resultClass, int timeout) {
         this.resultClass = resultClass;
@@ -73,7 +70,6 @@ public abstract class AckCallback<T> {
 
     /**
      * Invoked only once then <code>timeout</code> defined
-     *
      */
     public void onTimeout() {
 
@@ -87,5 +83,4 @@ public abstract class AckCallback<T> {
     public Class<T> getResultClass() {
         return resultClass;
     }
-
 }

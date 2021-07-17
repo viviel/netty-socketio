@@ -11,6 +11,6 @@ public interface BroadcastOperationsFactory {
             String namespace, String room,
             Iterable<SocketIOClient> clients,
             StoreFactory storeFactory,
-            ConcurrentMap<String, BroadcastAckCallback<Object>> broadcastAck
+            ConcurrentMap<String, BroadcastAckCallback<?>> broadcastAck
     );
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -154,16 +154,18 @@ public class NamespaceClient implements SocketIOClient {
             return false;
         NamespaceClient other = (NamespaceClient) obj;
         if (getSessionId() == null) {
-            if (other.getSessionId() != null)
+            if (other.getSessionId() != null) {
                 return false;
-        } else if (!getSessionId().equals(other.getSessionId()))
+            }
+        } else if (!getSessionId().equals(other.getSessionId())) {
             return false;
-        if (getNamespace().getName() == null) {
-            if (other.getNamespace().getName() != null)
-                return false;
-        } else if (!getNamespace().getName().equals(other.getNamespace().getName()))
-            return false;
-        return true;
+        }
+        String nsName = getNamespace().getName();
+        if (nsName == null) {
+            return other.getNamespace().getName() == null;
+        } else {
+            return nsName.equals(other.getNamespace().getName());
+        }
     }
 
     @Override
@@ -205,5 +207,4 @@ public class NamespaceClient implements SocketIOClient {
     public HandshakeData getHandshakeData() {
         return baseClient.getHandshakeData();
     }
-
 }

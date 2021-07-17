@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,9 +19,13 @@ import com.github.viviel.socketio.protocol.Packet;
 
 /**
  * Available client operations
- *
  */
 public interface ClientOperations {
+
+    /**
+     * Disconnect client
+     */
+    void disconnect();
 
     /**
      * Send custom packet.
@@ -33,16 +37,10 @@ public interface ClientOperations {
     void send(Packet packet);
 
     /**
-     * Disconnect client
-     *
-     */
-    void disconnect();
-
-    /**
      * Send event
      *
      * @param event - event name
-     * @param data - event data
+     * @param data  - event data
      */
     void send(String event, Object... data);
 }
