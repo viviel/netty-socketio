@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,34 +38,31 @@ public class BroadcastAckCallback<T> {
         this(resultClass, -1);
     }
 
-    final AckCallback<T> createClientCallback(final SocketIOClient client) {
+    final AckCallback<T> createClientCallback(SocketIOClient client, Object msg) {
         counter.getAndIncrement();
         return new AckCallback<T>(resultClass, timeout) {
             @Override
             public void onSuccess(T result) {
                 counter.getAndDecrement();
-                onClientSuccess(client, result);
+                onClientSuccess(client, msg, result);
                 executeSuccess();
             }
 
             @Override
             public void onTimeout() {
-                onClientTimeout(client);
+                onClientTimeout(client, msg);
             }
 
         };
     }
 
-    protected void onClientTimeout(SocketIOClient client) {
-
+    protected void onClientTimeout(SocketIOClient client, Object msg) {
     }
 
-    protected void onClientSuccess(SocketIOClient client, T result) {
-
+    protected void onClientSuccess(SocketIOClient client, Object msg, T result) {
     }
 
     protected void onAllSuccess() {
-
     }
 
     private void executeSuccess() {
@@ -80,6 +77,5 @@ public class BroadcastAckCallback<T> {
         loopFinished.set(true);
         executeSuccess();
     }
-
 }
 

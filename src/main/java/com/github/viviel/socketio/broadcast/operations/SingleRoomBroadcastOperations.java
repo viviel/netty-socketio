@@ -97,6 +97,7 @@ public class SingleRoomBroadcastOperations implements BroadcastOperations {
 
     private void doDispatch(Packet packet, SocketIOClient exclude) {
         String event = packet.getName();
+        Object data = packet.getData();
         BroadcastAckCallback<Object> ack = broadcastAck.get(event);
         if (ack == null) {
             for (SocketIOClient client : clients) {
@@ -110,7 +111,7 @@ public class SingleRoomBroadcastOperations implements BroadcastOperations {
                 if (exclude != null && client.getSessionId().equals(exclude.getSessionId())) {
                     continue;
                 }
-                client.send(packet, ack.createClientCallback(client));
+                client.send(packet, ack.createClientCallback(client, data));
             }
             ack.loopFinished();
         }
