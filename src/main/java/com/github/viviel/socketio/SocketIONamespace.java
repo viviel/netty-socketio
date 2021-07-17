@@ -17,7 +17,7 @@ package com.github.viviel.socketio;
 
 import com.github.viviel.socketio.broadcast.operations.BroadcastAckCallback;
 import com.github.viviel.socketio.broadcast.operations.BroadcastOperations;
-import com.github.viviel.socketio.listener.ClientListeners;
+import com.github.viviel.socketio.listener.EventManageable;
 
 import java.util.Collection;
 import java.util.UUID;
@@ -26,7 +26,7 @@ import java.util.UUID;
  * Fully thread-safe.
  *
  */
-public interface SocketIONamespace extends ClientListeners {
+public interface SocketIONamespace extends EventManageable {
 
     String getName();
 

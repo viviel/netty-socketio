@@ -1,12 +1,12 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,31 +15,26 @@
  */
 package com.github.viviel.socketio.parser;
 
-import java.io.IOException;
-import java.util.UUID;
-
 import com.github.viviel.socketio.AckCallback;
+import com.github.viviel.socketio.protocol.Packet;
+import com.github.viviel.socketio.protocol.PacketType;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import mockit.Expectations;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import java.io.IOException;
+import java.util.UUID;
 
-import com.github.viviel.socketio.protocol.Packet;
-import com.github.viviel.socketio.protocol.PacketType;
-import com.fasterxml.jackson.core.JsonParseException;
-
-@Ignore
 public class DecoderAckPacketTest extends DecoderBaseTest {
 
     @Test
     public void testDecode() throws IOException {
         Packet packet = decoder.decodePackets(Unpooled.copiedBuffer("6:::140", CharsetUtil.UTF_8), null);
-        Assert.assertEquals(PacketType.ACK, packet.getType());
-        Assert.assertEquals(140, (long)packet.getAckId());
-//        Assert.assertTrue(packet.getArgs().isEmpty());
+        Assertions.assertEquals(PacketType.ACK, packet.getType());
+        Assertions.assertEquals(140, (long) packet.getAckId());
+//        Assertions.assertTrue(packet.getArgs().isEmpty());
     }
 
     @Test
@@ -47,14 +42,14 @@ public class DecoderAckPacketTest extends DecoderBaseTest {
         initExpectations();
 
         Packet packet = decoder.decodePackets(Unpooled.copiedBuffer("6:::12+[\"woot\",\"wa\"]", CharsetUtil.UTF_8), null);
-        Assert.assertEquals(PacketType.ACK, packet.getType());
-        Assert.assertEquals(12, (long)packet.getAckId());
-//        Assert.assertEquals(Arrays.<Object>asList("woot", "wa"), packet.getArgs());
+        Assertions.assertEquals(PacketType.ACK, packet.getType());
+        Assertions.assertEquals(12, (long) packet.getAckId());
+//        Assertions.assertEquals(Arrays.<Object>asList("woot", "wa"), packet.getArgs());
     }
 
     private void initExpectations() {
         new Expectations() {{
-            ackManager.getCallback((UUID)any, anyInt);
+            ackManager.getCallback((UUID) any, anyInt);
             result = new AckCallback<String>(String.class) {
                 @Override
                 public void onSuccess(String result) {
@@ -63,7 +58,7 @@ public class DecoderAckPacketTest extends DecoderBaseTest {
         }};
     }
 
-    @Test(expected = JsonParseException.class)
+    @Test
     public void testDecodeWithBadJson() throws IOException {
         initExpectations();
         decoder.decodePackets(Unpooled.copiedBuffer("6:::1+{\"++]", CharsetUtil.UTF_8), null);

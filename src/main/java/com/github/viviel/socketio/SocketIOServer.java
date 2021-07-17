@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 /**
  * Fully thread-safe.
  */
-public class SocketIOServer implements ClientListeners {
+public class SocketIOServer implements EventManageable {
 
     private static final Logger log = LoggerFactory.getLogger(SocketIOServer.class);
 
@@ -136,7 +136,7 @@ public class SocketIOServer implements ClientListeners {
         log.info("Session store / pubsub factory used: {}", configCopy.getStoreFactory());
         initGroups();
 
-        pipelineFactory.start(configCopy, namespacesHub);
+        pipelineFactory.init(configCopy, namespacesHub);
 
         Class<? extends ServerChannel> channelClass = NioServerSocketChannel.class;
         if (configCopy.isUseLinuxNativeEpoll()) {
@@ -154,14 +154,11 @@ public class SocketIOServer implements ClientListeners {
             addr = new InetSocketAddress(configCopy.getHostname(), configCopy.getPort());
         }
 
-        return b.bind(addr).addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) {
-                if (future.isSuccess()) {
-                    log.info("SocketIO server started at port: {}", configCopy.getPort());
-                } else {
-                    log.error("SocketIO server start failed at port: {}!", configCopy.getPort());
-                }
+        return b.bind(addr).addListener((FutureListener<Void>) future -> {
+            if (future.isSuccess()) {
+                log.info("SocketIO server started at port: {}", configCopy.getPort());
+            } else {
+                log.error("SocketIO server start failed at port: {}!", configCopy.getPort());
             }
         });
     }

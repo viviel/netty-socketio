@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,17 +15,15 @@
  */
 package com.github.viviel.socketio.parser;
 
+import com.github.viviel.socketio.protocol.Packet;
+import com.github.viviel.socketio.protocol.PacketType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.github.viviel.socketio.protocol.Packet;
-import com.github.viviel.socketio.protocol.PacketType;
 
 public class EncoderEventPacketTest extends EncoderBaseTest {
 
@@ -35,7 +33,7 @@ public class EncoderEventPacketTest extends EncoderBaseTest {
         packet.setName("woot");
         ByteBuf result = Unpooled.buffer();
 //        encoder.encodePacket(packet, result);
-        Assert.assertEquals("5:::{\"name\":\"woot\"}", result.toString(CharsetUtil.UTF_8));
+        Assertions.assertEquals("5:::{\"name\":\"woot\"}", result.toString(CharsetUtil.UTF_8));
     }
 
     @Test
@@ -46,7 +44,7 @@ public class EncoderEventPacketTest extends EncoderBaseTest {
         packet.setName("tobi");
         ByteBuf result = Unpooled.buffer();
 //        encoder.encodePacket(packet, result);
-        Assert.assertEquals("5:1+::{\"name\":\"tobi\"}", result.toString(CharsetUtil.UTF_8));
+        Assertions.assertEquals("5:1+::{\"name\":\"tobi\"}", result.toString(CharsetUtil.UTF_8));
     }
 
     @Test
@@ -56,8 +54,8 @@ public class EncoderEventPacketTest extends EncoderBaseTest {
 //        packet.setArgs(Arrays.asList(Collections.singletonMap("a", "b"), 2, "3"));
         ByteBuf result = Unpooled.buffer();
 //        encoder.encodePacket(packet, result);
-        Assert.assertEquals("5:::{\"name\":\"edwald\",\"args\":[{\"a\":\"b\"},2,\"3\"]}",
-                                    result.toString(CharsetUtil.UTF_8));
+        Assertions.assertEquals("5:::{\"name\":\"edwald\",\"args\":[{\"a\":\"b\"},2,\"3\"]}",
+                                result.toString(CharsetUtil.UTF_8));
     }
 
 }

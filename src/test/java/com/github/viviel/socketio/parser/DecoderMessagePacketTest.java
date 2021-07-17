@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,43 +15,40 @@
  */
 package com.github.viviel.socketio.parser;
 
-import java.io.IOException;
-
-import io.netty.buffer.Unpooled;
-import io.netty.util.CharsetUtil;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import com.github.viviel.socketio.protocol.Packet;
 import com.github.viviel.socketio.protocol.PacketType;
+import io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-@Ignore
+import java.io.IOException;
+
 public class DecoderMessagePacketTest extends DecoderBaseTest {
 
     @Test
     public void testDecodeId() throws IOException {
         Packet packet = decoder.decodePackets(Unpooled.copiedBuffer("3:1::asdfasdf", CharsetUtil.UTF_8), null);
-        Assert.assertEquals(PacketType.MESSAGE, packet.getType());
-//        Assert.assertEquals(1, (long)packet.getId());
-//        Assert.assertTrue(packet.getArgs().isEmpty());
-//        Assert.assertTrue(packet.getAck().equals(Boolean.TRUE));
+        Assertions.assertEquals(PacketType.MESSAGE, packet.getType());
+//        Assertions.assertEquals(1, (long)packet.getId());
+//        Assertions.assertTrue(packet.getArgs().isEmpty());
+//        Assertions.assertTrue(packet.getAck().equals(Boolean.TRUE));
     }
 
     @Test
     public void testDecode() throws IOException {
         Packet packet = decoder.decodePackets(Unpooled.copiedBuffer("3:::woot", CharsetUtil.UTF_8), null);
-        Assert.assertEquals(PacketType.MESSAGE, packet.getType());
-        Assert.assertEquals("woot", packet.getData());
+        Assertions.assertEquals(PacketType.MESSAGE, packet.getType());
+        Assertions.assertEquals("woot", packet.getData());
     }
 
     @Test
     public void testDecodeWithIdAndEndpoint() throws IOException {
         Packet packet = decoder.decodePackets(Unpooled.copiedBuffer("3:5:/tobi", CharsetUtil.UTF_8), null);
-        Assert.assertEquals(PacketType.MESSAGE, packet.getType());
-//        Assert.assertEquals(5, (long)packet.getId());
-//        Assert.assertEquals(true, packet.getAck());
-        Assert.assertEquals("/tobi", packet.getNsp());
+        Assertions.assertEquals(PacketType.MESSAGE, packet.getType());
+//        Assertions.assertEquals(5, (long)packet.getId());
+//        Assertions.assertEquals(true, packet.getAck());
+        Assertions.assertEquals("/tobi", packet.getNsp());
     }
 
 }

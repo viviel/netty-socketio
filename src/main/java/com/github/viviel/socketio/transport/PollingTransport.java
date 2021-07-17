@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -87,7 +87,7 @@ public class PollingTransport extends ChannelInboundHandlerAdapter {
                     } else if ("false".equals(flag)) {
                         flag = "0";
                     }
-                    Integer enable = Integer.valueOf(flag);
+                    int enable = Integer.parseInt(flag);
                     ctx.channel().attr(EncoderHandler.B64).set(enable == 1);
                 }
 
