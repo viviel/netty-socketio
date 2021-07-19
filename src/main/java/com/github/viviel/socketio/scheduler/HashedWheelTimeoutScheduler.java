@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,7 @@
  * <p>
  * (c) Alim Akbashev, 2015-02-11
  */
-/**
+/*
  * Modified version of HashedWheelScheduler specially for timeouts handling.
  * Difference:
  * - handling old timeout with same key after adding new one
@@ -34,7 +34,6 @@ package com.github.viviel.socketio.scheduler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import io.netty.util.internal.PlatformDependent;
 
 import java.util.concurrent.ConcurrentMap;
@@ -71,48 +70,30 @@ public class HashedWheelTimeoutScheduler implements CancelableScheduler {
 
     @Override
     public void schedule(final Runnable runnable, long delay, TimeUnit unit) {
-        executorService.newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                runnable.run();
-            }
-        }, delay, unit);
+        executorService.newTimeout(timeout -> runnable.run(), delay, unit);
     }
 
     @Override
     public void scheduleCallback(final SchedulerKey key, final Runnable runnable, long delay, TimeUnit unit) {
-        Timeout timeout = executorService.newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                ctx.executor().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            runnable.run();
-                        } finally {
-                            scheduledFutures.remove(key);
-                        }
-                    }
-                });
+        Timeout timeout = executorService.newTimeout(t -> ctx.executor().execute(() -> {
+            try {
+                runnable.run();
+            } finally {
+                scheduledFutures.remove(key);
             }
-        }, delay, unit);
-
+        }), delay, unit);
         replaceScheduledFuture(key, timeout);
     }
 
     @Override
     public void schedule(final SchedulerKey key, final Runnable runnable, long delay, TimeUnit unit) {
-        Timeout timeout = executorService.newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                try {
-                    runnable.run();
-                } finally {
-                    scheduledFutures.remove(key);
-                }
+        Timeout timeout = executorService.newTimeout(t -> {
+            try {
+                runnable.run();
+            } finally {
+                scheduledFutures.remove(key);
             }
         }, delay, unit);
-
         replaceScheduledFuture(key, timeout);
     }
 
@@ -123,7 +104,6 @@ public class HashedWheelTimeoutScheduler implements CancelableScheduler {
 
     private void replaceScheduledFuture(final SchedulerKey key, final Timeout newTimeout) {
         final Timeout oldTimeout;
-
         if (newTimeout.isExpired()) {
             // no need to put already expired timeout to scheduledFutures map.
             // simply remove old timeout
@@ -131,7 +111,6 @@ public class HashedWheelTimeoutScheduler implements CancelableScheduler {
         } else {
             oldTimeout = scheduledFutures.put(key, newTimeout);
         }
-
         // if there was old timeout, cancel it
         if (oldTimeout != null) {
             oldTimeout.cancel();

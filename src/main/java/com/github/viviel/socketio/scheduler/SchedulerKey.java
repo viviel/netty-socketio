@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +19,6 @@ package com.github.viviel.socketio.scheduler;
 public class SchedulerKey {
 
     public enum Type {PING_TIMEOUT, ACK_TIMEOUT, UPGRADE_TIMEOUT}
-
-    ;
 
     private final Type type;
     private final Object sessionId;
@@ -58,5 +56,4 @@ public class SchedulerKey {
             return false;
         return true;
     }
-
 }

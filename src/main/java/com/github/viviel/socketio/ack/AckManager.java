@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -96,13 +96,12 @@ public class AckManager implements Disconnectable {
     public void onAck(SocketIOClient client, Packet packet) {
         AckSchedulerKey key = new AckSchedulerKey(Type.ACK_TIMEOUT, client.getSessionId(), packet.getAckId());
         scheduler.cancel(key);
-
         AckCallback callback = removeCallback(client.getSessionId(), packet.getAckId());
         if (callback == null) {
             return;
         }
         if (callback instanceof MultiTypeAckCallback) {
-            callback.onSuccess(new MultiTypeArgs(packet.<List<Object>>getData()));
+            callback.onSuccess(new MultiTypeArgs(packet.getData()));
         } else {
             Object param = null;
             List<Object> args = packet.getData();
@@ -110,8 +109,10 @@ public class AckManager implements Disconnectable {
                 param = args.get(0);
             }
             if (args.size() > 1) {
-                log.error("Wrong ack args amount. Should be only one argument, but current amount is: {}. Ack id: {}, sessionId: {}",
-                          args.size(), packet.getAckId(), client.getSessionId());
+                log.error(
+                        "Wrong ack args amount. Should be only one argument, but current amount is: {}. Ack id: {}, sessionId: {}",
+                        args.size(), packet.getAckId(), client.getSessionId()
+                );
             }
             callback.onSuccess(param);
         }
@@ -140,9 +141,7 @@ public class AckManager implements Disconnectable {
         if (log.isDebugEnabled()) {
             log.debug("AckCallback registered with id: {} for client: {}", index, sessionId);
         }
-
         scheduleTimeout(index, sessionId, callback);
-
         return index;
     }
 
@@ -151,13 +150,10 @@ public class AckManager implements Disconnectable {
             return;
         }
         SchedulerKey key = new AckSchedulerKey(Type.ACK_TIMEOUT, sessionId, index);
-        scheduler.scheduleCallback(key, new Runnable() {
-            @Override
-            public void run() {
-                AckCallback<?> cb = removeCallback(sessionId, index);
-                if (cb != null) {
-                    cb.onTimeout();
-                }
+        scheduler.scheduleCallback(key, () -> {
+            AckCallback<?> cb = removeCallback(sessionId, index);
+            if (cb != null) {
+                cb.onTimeout();
             }
         }, callback.getTimeout(), TimeUnit.SECONDS);
     }
@@ -168,7 +164,6 @@ public class AckManager implements Disconnectable {
         if (e == null) {
             return;
         }
-
         Set<Long> indexes = e.getAckIndexes();
         for (Long index : indexes) {
             AckCallback<?> callback = e.getAckCallback(index);
@@ -179,5 +174,4 @@ public class AckManager implements Disconnectable {
             scheduler.cancel(key);
         }
     }
-
 }
