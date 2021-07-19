@@ -17,7 +17,14 @@ package com.github.viviel.socketio;
 
 import com.github.viviel.socketio.broadcast.operations.BroadcastOperations;
 import com.github.viviel.socketio.broadcast.operations.MultiRoomBroadcastOperations;
-import com.github.viviel.socketio.listener.*;
+import com.github.viviel.socketio.interceptor.EventInterceptor;
+import com.github.viviel.socketio.interceptor.EventInterceptors;
+import com.github.viviel.socketio.listener.ConnectListener;
+import com.github.viviel.socketio.listener.DataListener;
+import com.github.viviel.socketio.listener.DisconnectListener;
+import com.github.viviel.socketio.listener.EventListeners;
+import com.github.viviel.socketio.listener.MultiTypeEventListener;
+import com.github.viviel.socketio.listener.PingListener;
 import com.github.viviel.socketio.namespace.Namespace;
 import com.github.viviel.socketio.namespace.NamespacesHub;
 import io.netty.bootstrap.ServerBootstrap;
@@ -43,7 +50,7 @@ import java.util.stream.Collectors;
 /**
  * Fully thread-safe.
  */
-public class SocketIOServer implements EventListeners {
+public class SocketIOServer implements EventListeners, EventInterceptors {
 
     private static final Logger log = LoggerFactory.getLogger(SocketIOServer.class);
 
@@ -225,24 +232,23 @@ public class SocketIOServer implements EventListeners {
     }
 
     @Override
-    public void addMultiTypeEventListener(String eventName, MultiTypeEventListener listener, Class<?>... eventClass) {
-        mainNamespace.addMultiTypeEventListener(eventName, listener, eventClass);
+    public void addMultiTypeEventListener(String event, MultiTypeEventListener listener, Class<?>... dataClass) {
+        mainNamespace.addMultiTypeEventListener(event, listener, dataClass);
     }
 
     @Override
-    public <T> void addEventListener(String eventName, Class<T> eventClass, DataListener<T> listener) {
-        mainNamespace.addEventListener(eventName, eventClass, listener);
+    public <T> void addEventListener(String event, Class<T> dataClass, DataListener<T> listener) {
+        mainNamespace.addEventListener(event, dataClass, listener);
     }
 
     @Override
-    public void addEventInterceptor(EventInterceptor eventInterceptor) {
-        mainNamespace.addEventInterceptor(eventInterceptor);
-
+    public void addEventInterceptor(EventInterceptor interceptor) {
+        mainNamespace.addEventInterceptor(interceptor);
     }
 
     @Override
-    public void removeAllListeners(String eventName) {
-        mainNamespace.removeAllListeners(eventName);
+    public void removeAllListeners(String event) {
+        mainNamespace.removeAllListeners(event);
     }
 
     @Override
@@ -261,12 +267,12 @@ public class SocketIOServer implements EventListeners {
     }
 
     @Override
-    public void addListeners(Object listeners) {
-        mainNamespace.addListeners(listeners);
+    public void addListeners(Object listener) {
+        mainNamespace.addListeners(listener);
     }
 
     @Override
-    public void addListeners(Object listeners, Class<?> listenersClass) {
-        mainNamespace.addListeners(listeners, listenersClass);
+    public void addListeners(Object listener, Class<?> listenersClass) {
+        mainNamespace.addListeners(listener, listenersClass);
     }
 }

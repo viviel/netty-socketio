@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -91,13 +91,11 @@ public class PacketListener {
                     client.getBaseClient().send(packet, transport);
                 }
 
-                if (packet.getSubType() == PacketType.ACK
-                    || packet.getSubType() == PacketType.BINARY_ACK) {
+                if (packet.getSubType() == PacketType.ACK || packet.getSubType() == PacketType.BINARY_ACK) {
                     ackManager.onAck(client, packet);
                 }
 
-                if (packet.getSubType() == PacketType.EVENT
-                    || packet.getSubType() == PacketType.BINARY_EVENT) {
+                if (packet.getSubType() == PacketType.EVENT || packet.getSubType() == PacketType.BINARY_EVENT) {
                     Namespace namespace = namespacesHub.get(packet.getNsp());
                     List<Object> args = Collections.emptyList();
                     if (packet.getData() != null) {

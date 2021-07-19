@@ -20,6 +20,7 @@ import com.github.viviel.socketio.handler.ClientHead;
 import com.github.viviel.socketio.namespace.Namespace;
 import com.github.viviel.socketio.namespace.NamespacesHub;
 import com.github.viviel.socketio.protocol.JsonSupport;
+import com.github.viviel.socketio.protocol.Packet;
 import com.github.viviel.socketio.store.StoreFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,13 +60,17 @@ public abstract class BaseStoreFactory implements StoreFactory {
     protected void initDispatch(NamespacesHub namespacesHub, DispatchMessage msg) {
         String room = msg.getRoom();
         String namespaceName = msg.getNamespace();
+        Packet packet = msg.getPacket();
+        String event = packet.getName();
+        Object data = packet.getData();
         Namespace namespace = namespacesHub.get(namespaceName);
         if (namespace == null) {
-            log.error("{}, could not find namespace. package: {}", PubSubType.DISPATCH, msg.getPacket());
+            log.error("{}, could not find namespace. package: {}", PubSubType.DISPATCH, packet);
             return;
         }
-        namespace.dispatch(room, msg.getPacket());
-        log.debug("{} packet: {}", PubSubType.DISPATCH, msg.getPacket());
+        namespace.dispatch(room, packet);
+        namespace.processGlobalListeners(event, data);
+        log.debug("{} packet: {}", PubSubType.DISPATCH, packet);
     }
 
     protected void initJoin(NamespacesHub namespacesHub, JoinLeaveMessage msg) {

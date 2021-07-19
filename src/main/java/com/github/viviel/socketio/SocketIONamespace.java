@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,7 @@ package com.github.viviel.socketio;
 
 import com.github.viviel.socketio.broadcast.operations.BroadcastAckCallback;
 import com.github.viviel.socketio.broadcast.operations.BroadcastOperations;
+import com.github.viviel.socketio.interceptor.EventInterceptors;
 import com.github.viviel.socketio.listener.EventListeners;
 
 import java.util.Collection;
@@ -24,9 +25,8 @@ import java.util.UUID;
 
 /**
  * Fully thread-safe.
- *
  */
-public interface SocketIONamespace extends EventListeners {
+public interface SocketIONamespace extends EventListeners, EventInterceptors {
 
     String getName();
 

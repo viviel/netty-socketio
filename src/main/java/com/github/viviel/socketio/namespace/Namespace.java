@@ -15,12 +15,23 @@
  */
 package com.github.viviel.socketio.namespace;
 
-import com.github.viviel.socketio.*;
+import com.github.viviel.socketio.AckMode;
+import com.github.viviel.socketio.AckRequest;
+import com.github.viviel.socketio.Configuration;
+import com.github.viviel.socketio.MultiTypeArgs;
+import com.github.viviel.socketio.SocketIOClient;
+import com.github.viviel.socketio.SocketIONamespace;
 import com.github.viviel.socketio.annotation.ScannerEngine;
 import com.github.viviel.socketio.broadcast.operations.BroadcastAckCallback;
 import com.github.viviel.socketio.broadcast.operations.BroadcastOperations;
 import com.github.viviel.socketio.broadcast.operations.BroadcastOperationsFactory;
-import com.github.viviel.socketio.listener.*;
+import com.github.viviel.socketio.interceptor.EventInterceptor;
+import com.github.viviel.socketio.listener.ConnectListener;
+import com.github.viviel.socketio.listener.DataListener;
+import com.github.viviel.socketio.listener.DisconnectListener;
+import com.github.viviel.socketio.listener.ExceptionListener;
+import com.github.viviel.socketio.listener.MultiTypeEventListener;
+import com.github.viviel.socketio.listener.PingListener;
 import com.github.viviel.socketio.protocol.JsonSupport;
 import com.github.viviel.socketio.protocol.Packet;
 import com.github.viviel.socketio.store.StoreFactory;
@@ -29,7 +40,14 @@ import com.github.viviel.socketio.store.pubsub.PubSubType;
 import com.github.viviel.socketio.transport.NamespaceClient;
 import io.netty.util.internal.PlatformDependent;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
@@ -45,10 +63,10 @@ public class Namespace implements SocketIONamespace {
 
     private final ScannerEngine engine = new ScannerEngine();
     private final ConcurrentMap<String, EventEntry<?>> eventListeners = PlatformDependent.newConcurrentHashMap();
-    private final Queue<ConnectListener> connectListeners = new ConcurrentLinkedQueue<ConnectListener>();
-    private final Queue<DisconnectListener> disconnectListeners = new ConcurrentLinkedQueue<DisconnectListener>();
-    private final Queue<PingListener> pingListeners = new ConcurrentLinkedQueue<PingListener>();
-    private final Queue<EventInterceptor> eventInterceptors = new ConcurrentLinkedQueue<EventInterceptor>();
+    private final Queue<ConnectListener> connectListeners = new ConcurrentLinkedQueue<>();
+    private final Queue<DisconnectListener> disconnectListeners = new ConcurrentLinkedQueue<>();
+    private final Queue<PingListener> pingListeners = new ConcurrentLinkedQueue<>();
+    private final Queue<EventInterceptor> eventInterceptors = new ConcurrentLinkedQueue<>();
     private final ConcurrentMap<String, BroadcastAckCallback<?>> broadcastCallback = PlatformDependent.newConcurrentHashMap();
 
     private final Map<UUID, SocketIOClient> allClients = PlatformDependent.newConcurrentHashMap();
@@ -82,65 +100,62 @@ public class Namespace implements SocketIONamespace {
     }
 
     @Override
-    public void addMultiTypeEventListener(String eventName, MultiTypeEventListener listener,
-                                          Class<?>... eventClass) {
-        EventEntry entry = eventListeners.get(eventName);
+    public void addMultiTypeEventListener(String event, MultiTypeEventListener listener,
+                                          Class<?>... dataClass) {
+        EventEntry entry = eventListeners.get(event);
         if (entry == null) {
             entry = new EventEntry();
-            EventEntry<?> oldEntry = eventListeners.putIfAbsent(eventName, entry);
+            EventEntry<?> oldEntry = eventListeners.putIfAbsent(event, entry);
             if (oldEntry != null) {
                 entry = oldEntry;
             }
         }
         entry.addListener(listener);
-        jsonSupport.addEventMapping(name, eventName, eventClass);
+        jsonSupport.addEventMapping(name, event, dataClass);
     }
 
     @Override
-    public void removeAllListeners(String eventName) {
-        EventEntry<?> entry = eventListeners.remove(eventName);
+    public void removeAllListeners(String event) {
+        EventEntry<?> entry = eventListeners.remove(event);
         if (entry != null) {
-            jsonSupport.removeEventMapping(name, eventName);
+            jsonSupport.removeEventMapping(name, event);
         }
     }
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public <T> void addEventListener(String eventName, Class<T> eventClass, DataListener<T> listener) {
-        EventEntry entry = eventListeners.get(eventName);
+    public <T> void addEventListener(String event, Class<T> dataClass, DataListener<T> listener) {
+        EventEntry entry = eventListeners.get(event);
         if (entry == null) {
             entry = new EventEntry<T>();
-            EventEntry<?> oldEntry = eventListeners.putIfAbsent(eventName, entry);
+            EventEntry<?> oldEntry = eventListeners.putIfAbsent(event, entry);
             if (oldEntry != null) {
                 entry = oldEntry;
             }
         }
         entry.addListener(listener);
-        jsonSupport.addEventMapping(name, eventName, eventClass);
+        jsonSupport.addEventMapping(name, event, dataClass);
     }
 
     @Override
-    public void addEventInterceptor(EventInterceptor eventInterceptor) {
-        eventInterceptors.add(eventInterceptor);
+    public void addEventInterceptor(EventInterceptor interceptor) {
+        eventInterceptors.add(interceptor);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public void onEvent(NamespaceClient client, String eventName, List<Object> args, AckRequest ackRequest) {
-        EventEntry entry = eventListeners.get(eventName);
+    @SuppressWarnings({"rawtypes"})
+    public void onEvent(NamespaceClient client, String event, List<Object> args, AckRequest ackRequest) {
+        EventEntry entry = eventListeners.get(event);
         if (entry == null) {
             return;
         }
 
         try {
-            Queue<DataListener> listeners = entry.getListeners();
-            for (DataListener dataListener : listeners) {
-                Object data = getEventData(args, dataListener);
-                dataListener.onData(client, data, ackRequest);
+            boolean r = processInterceptors(client, event, args, ackRequest);
+            if (!r) {
+                return;
             }
-
-            for (EventInterceptor eventInterceptor : eventInterceptors) {
-                eventInterceptor.onEvent(client, eventName, args, ackRequest);
-            }
+            processListeners(client, event, args, ackRequest);
+            processGlobalListeners(event, args);
         } catch (Exception e) {
             exceptionListener.onEventException(e, args, client);
             if (ackMode == AckMode.AUTO_SUCCESS_ONLY) {
@@ -149,6 +164,32 @@ public class Namespace implements SocketIONamespace {
         }
 
         sendAck(ackRequest);
+    }
+
+    private boolean processInterceptors(NamespaceClient client, String event,
+                                        List<Object> args, AckRequest ackRequest) {
+        for (EventInterceptor interceptor : eventInterceptors) {
+            boolean r = interceptor.onEvent(client, event, args, ackRequest);
+            if (!r) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void processListeners(NamespaceClient client, String event, List<Object> args,
+                                  AckRequest ackRequest) throws Exception {
+        EventEntry entry = eventListeners.get(event);
+        Queue<DataListener> listeners = entry.getListeners();
+        for (DataListener listener : listeners) {
+            Object data = getEventData(args, listener);
+            listener.onData(client, data, ackRequest);
+        }
+    }
+
+    public void processGlobalListeners(String event, Object args) {
+
     }
 
     private void sendAck(AckRequest ackRequest) {
@@ -268,13 +309,13 @@ public class Namespace implements SocketIONamespace {
     }
 
     @Override
-    public void addListeners(Object listeners) {
-        addListeners(listeners, listeners.getClass());
+    public void addListeners(Object listener) {
+        addListeners(listener, listener.getClass());
     }
 
     @Override
-    public void addListeners(Object listeners, Class<?> listenersClass) {
-        engine.scan(this, listeners, listenersClass);
+    public void addListeners(Object listener, Class<?> listenersClass) {
+        engine.scan(this, listener, listenersClass);
     }
 
     public void joinRoom(String room, UUID sessionId) {
@@ -290,7 +331,7 @@ public class Namespace implements SocketIONamespace {
     private <K, V> void join(ConcurrentMap<K, Set<V>> map, K key, V value) {
         Set<V> clients = map.get(key);
         if (clients == null) {
-            clients = Collections.newSetFromMap(PlatformDependent.<V, Boolean>newConcurrentHashMap());
+            clients = Collections.newSetFromMap(PlatformDependent.newConcurrentHashMap());
             Set<V> oldClients = map.putIfAbsent(key, clients);
             if (oldClients != null) {
                 clients = oldClients;
@@ -350,7 +391,7 @@ public class Namespace implements SocketIONamespace {
             return Collections.emptyList();
         }
 
-        List<SocketIOClient> result = new ArrayList<SocketIOClient>();
+        List<SocketIOClient> result = new ArrayList<>();
         for (UUID sessionId : sessionIds) {
             SocketIOClient client = allClients.get(sessionId);
             if (client != null) {

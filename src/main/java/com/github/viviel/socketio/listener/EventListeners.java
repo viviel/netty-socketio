@@ -17,11 +17,9 @@ package com.github.viviel.socketio.listener;
 
 public interface EventListeners {
 
-    void addMultiTypeEventListener(String eventName, MultiTypeEventListener listener, Class<?>... eventClass);
+    void addMultiTypeEventListener(String event, MultiTypeEventListener listener, Class<?>... dataClass);
 
-    <T> void addEventListener(String eventName, Class<T> eventClass, DataListener<T> listener);
-
-    void addEventInterceptor(EventInterceptor eventInterceptor);
+    <T> void addEventListener(String event, Class<T> dataClass, DataListener<T> listener);
 
     void addDisconnectListener(DisconnectListener listener);
 
@@ -29,9 +27,9 @@ public interface EventListeners {
 
     void addPingListener(PingListener listener);
 
-    void addListeners(Object listeners);
+    void addListeners(Object listener);
 
-    void addListeners(Object listeners, Class<?> listenersClass);
+    void addListeners(Object listener, Class<?> listenersClass);
 
-    void removeAllListeners(String eventName);
+    void removeAllListeners(String event);
 }

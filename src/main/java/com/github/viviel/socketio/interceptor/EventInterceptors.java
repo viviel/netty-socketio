@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2019 Nikita Koksharov
+ * Copyright (c) 2012-2019 viviel
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.viviel.socketio.namespace;
 
-import com.github.viviel.socketio.listener.DataListener;
+package com.github.viviel.socketio.interceptor;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+public interface EventInterceptors {
 
-public class EventEntry<T> {
-
-    private final Queue<DataListener<T>> listeners = new ConcurrentLinkedQueue<>();
-
-    public EventEntry() {
-        super();
-    }
-
-    public void addListener(DataListener<T> listener) {
-        listeners.add(listener);
-    }
-
-    public Queue<DataListener<T>> getListeners() {
-        return listeners;
-    }
+    void addEventInterceptor(EventInterceptor interceptor);
 }

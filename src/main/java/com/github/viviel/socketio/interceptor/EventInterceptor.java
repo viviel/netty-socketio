@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.viviel.socketio.listener;
+package com.github.viviel.socketio.interceptor;
 
 import com.github.viviel.socketio.AckRequest;
 import com.github.viviel.socketio.transport.NamespaceClient;
@@ -21,5 +21,6 @@ import com.github.viviel.socketio.transport.NamespaceClient;
 import java.util.List;
 
 public interface EventInterceptor {
-    void onEvent(NamespaceClient client, String eventName, List<Object> args, AckRequest ackRequest);
+
+    boolean onEvent(NamespaceClient client, String event, List<Object> args, AckRequest ackRequest);
 }
