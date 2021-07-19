@@ -375,7 +375,7 @@ public class Namespace implements SocketIONamespace {
     }
 
     @Override
-    public void addBroadcastAck(String ackName, BroadcastAckCallback<Object> ack) {
+    public void addBroadcastAckCallback(String ackName, BroadcastAckCallback<Object> ack) {
         broadcastCallback.put(ackName, ack);
     }
 }

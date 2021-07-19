@@ -81,6 +81,16 @@ public class SingleRoomBroadcastOperations implements BroadcastOperations {
     }
 
     @Override
+    public void send(String event, String callback, Object... data) {
+        Packet packet = new Packet(PacketType.MESSAGE);
+        packet.setSubType(PacketType.EVENT);
+        packet.setBroadcastCallbackName(callback);
+        packet.setName(event);
+        packet.setData(Arrays.asList(data));
+        send(packet);
+    }
+
+    @Override
     public void send(String event, SocketIOClient exclude, Object... data) {
         Packet packet = new Packet(PacketType.MESSAGE);
         packet.setSubType(PacketType.EVENT);
@@ -91,10 +101,10 @@ public class SingleRoomBroadcastOperations implements BroadcastOperations {
     }
 
     @Override
-    public void send(String event, String callbackName, SocketIOClient exclude, Object... data) {
+    public void send(String event, String callback, SocketIOClient exclude, Object... data) {
         Packet packet = new Packet(PacketType.MESSAGE);
         packet.setSubType(PacketType.EVENT);
-        packet.setBroadcastCallbackName(callbackName);
+        packet.setBroadcastCallbackName(callback);
         packet.setName(event);
         packet.setData(Arrays.asList(data));
         doDispatch(packet, exclude);
@@ -150,10 +160,10 @@ public class SingleRoomBroadcastOperations implements BroadcastOperations {
     }
 
     @Override
-    public void dispatch(String event, String callbackName, Object... data) {
+    public void dispatch(String event, String callback, Object... data) {
         Packet packet = new Packet(PacketType.MESSAGE);
         packet.setSubType(PacketType.EVENT);
-        packet.setBroadcastCallbackName(callbackName);
+        packet.setBroadcastCallbackName(callback);
         packet.setName(event);
         packet.setData(Arrays.asList(data));
         dispatch(packet);

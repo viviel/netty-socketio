@@ -28,13 +28,15 @@ public interface BroadcastOperations extends ClientOperations {
 
     Collection<SocketIOClient> getClients();
 
+    void send(String event, String callback, Object... data);
+
     void send(String event, SocketIOClient exclude, Object... data);
 
-    void send(String event, String callbackName, SocketIOClient exclude, Object... data);
+    void send(String event, String callback, SocketIOClient exclude, Object... data);
 
     void dispatch(Packet packet);
 
     void dispatch(String event, Object... data);
 
-    void dispatch(String event, String callbackName, Object... data);
+    void dispatch(String event, String callback, Object... data);
 }

@@ -61,6 +61,13 @@ public class MultiRoomBroadcastOperations implements BroadcastOperations {
     }
 
     @Override
+    public void send(String event, String callback, Object... data) {
+        for (BroadcastOperations b : this.broadcastOperations) {
+            b.send(event, callback, data);
+        }
+    }
+
+    @Override
     public void send(String event, SocketIOClient exclude, Object... data) {
         for (BroadcastOperations b : this.broadcastOperations) {
             b.send(event, exclude, data);
@@ -68,9 +75,9 @@ public class MultiRoomBroadcastOperations implements BroadcastOperations {
     }
 
     @Override
-    public void send(String event, String callbackName, SocketIOClient exclude, Object... data) {
+    public void send(String event, String callback, SocketIOClient exclude, Object... data) {
         for (BroadcastOperations b : this.broadcastOperations) {
-            b.send(event, callbackName, exclude, data);
+            b.send(event, callback, exclude, data);
         }
     }
 
@@ -89,9 +96,9 @@ public class MultiRoomBroadcastOperations implements BroadcastOperations {
     }
 
     @Override
-    public void dispatch(String event, String callbackName, Object... data) {
+    public void dispatch(String event, String callback, Object... data) {
         for (BroadcastOperations e : this.broadcastOperations) {
-            e.dispatch(event, callbackName, data);
+            e.dispatch(event, callback, data);
         }
     }
 }

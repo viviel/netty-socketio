@@ -49,5 +49,5 @@ public interface SocketIONamespace extends EventManageable {
      */
     SocketIOClient getClient(UUID uuid);
 
-    void addBroadcastAck(String ackName, BroadcastAckCallback<Object> ack);
+    void addBroadcastAckCallback(String ackName, BroadcastAckCallback<Object> ack);
 }
