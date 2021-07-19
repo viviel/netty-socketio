@@ -15,7 +15,7 @@
  */
 package com.github.viviel.socketio.listener;
 
-public interface EventManageable {
+public interface EventListeners {
 
     void addMultiTypeEventListener(String eventName, MultiTypeEventListener listener, Class<?>... eventClass);
 

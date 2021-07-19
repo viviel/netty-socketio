@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 /**
  * Fully thread-safe.
  */
-public class SocketIOServer implements EventManageable {
+public class SocketIOServer implements EventListeners {
 
     private static final Logger log = LoggerFactory.getLogger(SocketIOServer.class);
 
