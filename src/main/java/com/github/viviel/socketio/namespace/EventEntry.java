@@ -16,6 +16,7 @@
 package com.github.viviel.socketio.namespace;
 
 import com.github.viviel.socketio.listener.DataListener;
+import com.github.viviel.socketio.listener.GlobalDataListener;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -23,6 +24,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class EventEntry<T> {
 
     private final Queue<DataListener<T>> listeners = new ConcurrentLinkedQueue<>();
+
+    private final Queue<GlobalDataListener> globalListeners = new ConcurrentLinkedQueue<>();
 
     public EventEntry() {
         super();
@@ -34,5 +37,13 @@ public class EventEntry<T> {
 
     public Queue<DataListener<T>> getListeners() {
         return listeners;
+    }
+
+    public void addGlobalListener(GlobalDataListener listener) {
+        globalListeners.add(listener);
+    }
+
+    public Queue<GlobalDataListener> getGlobalListeners() {
+        return globalListeners;
     }
 }

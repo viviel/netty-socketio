@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,7 +51,7 @@ public class PacketDecoder {
         String packet = URLDecoder.decode(content.toString(CharsetUtil.UTF_8), CharsetUtil.UTF_8.name());
 
         if (jsonIndex != null) {
-            /**
+            /*
              * double escaping is required for escaped new lines because unescaping of new lines can be done safely on server-side
              * (c) socket.io.js
              *
@@ -231,7 +231,7 @@ public class PacketDecoder {
             frame.readerIndex(frame.readerIndex() + frame.readableBytes());
 
             if (binaryPacket.isAttachmentsLoaded()) {
-                LinkedList<ByteBuf> slices = new LinkedList<ByteBuf>();
+                LinkedList<ByteBuf> slices = new LinkedList<>();
                 ByteBuf source = binaryPacket.getDataSource();
                 for (int i = 0; i < binaryPacket.getAttachments().size(); i++) {
                     ByteBuf attachment = binaryPacket.getAttachments().get(i);
@@ -255,7 +255,7 @@ public class PacketDecoder {
                 }
                 slices.add(source.slice());
 
-                ByteBuf compositeBuf = Unpooled.wrappedBuffer(slices.toArray(new ByteBuf[slices.size()]));
+                ByteBuf compositeBuf = Unpooled.wrappedBuffer(slices.toArray(new ByteBuf[0]));
                 parseBody(head, compositeBuf, binaryPacket);
                 head.setLastBinaryPacket(null);
                 return binaryPacket;
@@ -301,7 +301,7 @@ public class PacketDecoder {
 
     private String readNamespace(ByteBuf frame) {
 
-        /**
+        /*
          * namespace post request with url queryString, like
          *  /message?a=1,
          *  /message,

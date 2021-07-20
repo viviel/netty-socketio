@@ -19,12 +19,7 @@ import com.github.viviel.socketio.broadcast.operations.BroadcastOperations;
 import com.github.viviel.socketio.broadcast.operations.MultiRoomBroadcastOperations;
 import com.github.viviel.socketio.interceptor.EventInterceptor;
 import com.github.viviel.socketio.interceptor.EventInterceptors;
-import com.github.viviel.socketio.listener.ConnectListener;
-import com.github.viviel.socketio.listener.DataListener;
-import com.github.viviel.socketio.listener.DisconnectListener;
-import com.github.viviel.socketio.listener.EventListeners;
-import com.github.viviel.socketio.listener.MultiTypeEventListener;
-import com.github.viviel.socketio.listener.PingListener;
+import com.github.viviel.socketio.listener.*;
 import com.github.viviel.socketio.namespace.Namespace;
 import com.github.viviel.socketio.namespace.NamespacesHub;
 import io.netty.bootstrap.ServerBootstrap;
@@ -239,6 +234,11 @@ public class SocketIOServer implements EventListeners, EventInterceptors {
     @Override
     public <T> void addEventListener(String event, Class<T> dataClass, DataListener<T> listener) {
         mainNamespace.addEventListener(event, dataClass, listener);
+    }
+
+    @Override
+    public <T> void addGlobalEventListener(String event, Class<T> dataClass, GlobalDataListener listener) {
+        mainNamespace.addGlobalEventListener(event, dataClass, listener);
     }
 
     @Override

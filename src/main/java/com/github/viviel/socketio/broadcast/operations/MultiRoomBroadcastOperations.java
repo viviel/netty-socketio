@@ -80,25 +80,4 @@ public class MultiRoomBroadcastOperations implements BroadcastOperations {
             b.send(event, callback, exclude, data);
         }
     }
-
-    @Override
-    public void dispatch(Packet packet) {
-        for (BroadcastOperations e : this.broadcastOperations) {
-            e.dispatch(packet);
-        }
-    }
-
-    @Override
-    public void dispatch(String event, Object... data) {
-        for (BroadcastOperations e : this.broadcastOperations) {
-            e.dispatch(event, data);
-        }
-    }
-
-    @Override
-    public void dispatch(String event, String callback, Object... data) {
-        for (BroadcastOperations e : this.broadcastOperations) {
-            e.dispatch(event, callback, data);
-        }
-    }
 }

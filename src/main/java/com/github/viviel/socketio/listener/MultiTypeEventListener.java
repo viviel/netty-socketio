@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,6 @@ import com.github.viviel.socketio.MultiTypeArgs;
 
 /**
  * Multi type args event listener
- *
  */
 public interface MultiTypeEventListener extends DataListener<MultiTypeArgs> {
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,13 +22,15 @@ import java.util.List;
 
 /**
  * Base callback exceptions listener
- *
- *
  */
 public abstract class ExceptionListenerAdapter implements ExceptionListener {
 
     @Override
-    public void onEventException(Exception e, List<Object> data, SocketIOClient client) {
+    public void onEventException(Exception e, List<Object> args, SocketIOClient client) {
+    }
+
+    @Override
+    public void onEventException(Exception e, List<Object> args) {
     }
 
     @Override
@@ -46,7 +48,5 @@ public abstract class ExceptionListenerAdapter implements ExceptionListener {
 
     @Override
     public void onPingException(Exception e, SocketIOClient client) {
-
     }
-
 }

@@ -13,24 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.viviel.socketio.store.pubsub;
+package com.github.viviel.socketio.listener;
 
-import com.github.viviel.socketio.protocol.Packet;
+import java.util.List;
 
-public class DispatchMessage extends PubSubMessage {
+public interface GlobalDataListener {
 
-    private static final long serialVersionUID = 6692047718303934349L;
-
-    private Packet packet;
-
-    public DispatchMessage() {
-    }
-
-    public DispatchMessage(Packet packet) {
-        this.packet = packet;
-    }
-
-    public Packet getPacket() {
-        return packet;
-    }
+    /**
+     * Invokes when data object received from client
+     */
+    void onData(String event, List<Object> args) throws Exception;
 }

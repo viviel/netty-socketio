@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +32,11 @@ public class DefaultExceptionListener extends ExceptionListenerAdapter {
     }
 
     @Override
+    public void onEventException(Exception e, List<Object> args) {
+        log.error(e.getMessage(), e);
+    }
+
+    @Override
     public void onDisconnectException(Exception e, SocketIOClient client) {
         log.error(e.getMessage(), e);
     }
@@ -51,5 +56,4 @@ public class DefaultExceptionListener extends ExceptionListenerAdapter {
         log.error(e.getMessage(), e);
         return true;
     }
-
 }

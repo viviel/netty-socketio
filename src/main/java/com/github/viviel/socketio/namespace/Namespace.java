@@ -15,39 +15,26 @@
  */
 package com.github.viviel.socketio.namespace;
 
-import com.github.viviel.socketio.AckMode;
-import com.github.viviel.socketio.AckRequest;
-import com.github.viviel.socketio.Configuration;
-import com.github.viviel.socketio.MultiTypeArgs;
-import com.github.viviel.socketio.SocketIOClient;
-import com.github.viviel.socketio.SocketIONamespace;
+import com.github.viviel.socketio.*;
 import com.github.viviel.socketio.annotation.ScannerEngine;
 import com.github.viviel.socketio.broadcast.operations.BroadcastAckCallback;
 import com.github.viviel.socketio.broadcast.operations.BroadcastOperations;
 import com.github.viviel.socketio.broadcast.operations.BroadcastOperationsFactory;
+import com.github.viviel.socketio.function.Runnable;
+import com.github.viviel.socketio.function.Supplier;
 import com.github.viviel.socketio.interceptor.EventInterceptor;
-import com.github.viviel.socketio.listener.ConnectListener;
-import com.github.viviel.socketio.listener.DataListener;
-import com.github.viviel.socketio.listener.DisconnectListener;
-import com.github.viviel.socketio.listener.ExceptionListener;
-import com.github.viviel.socketio.listener.MultiTypeEventListener;
-import com.github.viviel.socketio.listener.PingListener;
+import com.github.viviel.socketio.listener.*;
 import com.github.viviel.socketio.protocol.JsonSupport;
 import com.github.viviel.socketio.protocol.Packet;
+import com.github.viviel.socketio.protocol.PacketType;
 import com.github.viviel.socketio.store.StoreFactory;
+import com.github.viviel.socketio.store.pubsub.DispatchMessage;
 import com.github.viviel.socketio.store.pubsub.JoinLeaveMessage;
 import com.github.viviel.socketio.store.pubsub.PubSubType;
 import com.github.viviel.socketio.transport.NamespaceClient;
 import io.netty.util.internal.PlatformDependent;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
@@ -100,16 +87,8 @@ public class Namespace implements SocketIONamespace {
     }
 
     @Override
-    public void addMultiTypeEventListener(String event, MultiTypeEventListener listener,
-                                          Class<?>... dataClass) {
-        EventEntry entry = eventListeners.get(event);
-        if (entry == null) {
-            entry = new EventEntry();
-            EventEntry<?> oldEntry = eventListeners.putIfAbsent(event, entry);
-            if (oldEntry != null) {
-                entry = oldEntry;
-            }
-        }
+    public void addMultiTypeEventListener(String event, MultiTypeEventListener listener, Class<?>... dataClass) {
+        EventEntry entry = getEventEntry(event);
         entry.addListener(listener);
         jsonSupport.addEventMapping(name, event, dataClass);
     }
@@ -125,16 +104,27 @@ public class Namespace implements SocketIONamespace {
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public <T> void addEventListener(String event, Class<T> dataClass, DataListener<T> listener) {
-        EventEntry entry = eventListeners.get(event);
+        EventEntry entry = getEventEntry(event);
+        entry.addListener(listener);
+        jsonSupport.addEventMapping(name, event, dataClass);
+    }
+
+    private EventEntry<?> getEventEntry(String event) {
+        EventEntry<?> entry = eventListeners.get(event);
         if (entry == null) {
-            entry = new EventEntry<T>();
+            entry = new EventEntry<>();
             EventEntry<?> oldEntry = eventListeners.putIfAbsent(event, entry);
             if (oldEntry != null) {
                 entry = oldEntry;
             }
         }
-        entry.addListener(listener);
-        jsonSupport.addEventMapping(name, event, dataClass);
+        return entry;
+    }
+
+    @Override
+    public <T> void addGlobalEventListener(String event, Class<T> dataClass, GlobalDataListener listener) {
+        EventEntry<?> entry = getEventEntry(event);
+        entry.addGlobalListener(listener);
     }
 
     @Override
@@ -148,29 +138,37 @@ public class Namespace implements SocketIONamespace {
         if (entry == null) {
             return;
         }
-
-        try {
-            boolean r = processInterceptors(client, event, args, ackRequest);
-            if (!r) {
-                return;
-            }
-            processListeners(client, event, args, ackRequest);
-            processGlobalListeners(event, args);
-        } catch (Exception e) {
-            exceptionListener.onEventException(e, args, client);
-            if (ackMode == AckMode.AUTO_SUCCESS_ONLY) {
-                return;
-            }
+        boolean keep = processInterceptors(client, event, args, ackRequest);
+        if (!keep) {
+            return;
         }
-
+        processListeners(client, event, args, ackRequest);
+        processGlobalListeners(event, args);
         sendAck(ackRequest);
+    }
+
+    private void withCatch(List<Object> args, Runnable r) {
+        try {
+            r.run();
+        } catch (Exception e) {
+            exceptionListener.onEventException(e, args);
+        }
+    }
+
+    private <T> T withCatch(List<Object> args, Supplier<T> s) {
+        try {
+            return s.get();
+        } catch (Exception e) {
+            exceptionListener.onEventException(e, args);
+            return null;
+        }
     }
 
     private boolean processInterceptors(NamespaceClient client, String event,
                                         List<Object> args, AckRequest ackRequest) {
         for (EventInterceptor interceptor : eventInterceptors) {
-            boolean r = interceptor.onEvent(client, event, args, ackRequest);
-            if (!r) {
+            Boolean keep = withCatch(args, () -> interceptor.onEvent(client, event, args, ackRequest));
+            if (keep == null || !keep) {
                 return false;
             }
         }
@@ -178,18 +176,38 @@ public class Namespace implements SocketIONamespace {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private void processListeners(NamespaceClient client, String event, List<Object> args,
-                                  AckRequest ackRequest) throws Exception {
+    private void processListeners(NamespaceClient client, String event, List<Object> args, AckRequest ackRequest) {
         EventEntry entry = eventListeners.get(event);
         Queue<DataListener> listeners = entry.getListeners();
         for (DataListener listener : listeners) {
             Object data = getEventData(args, listener);
-            listener.onData(client, data, ackRequest);
+            withCatch(args, () -> listener.onData(client, data, ackRequest));
         }
     }
 
-    public void processGlobalListeners(String event, Object args) {
+    public void processGlobalListeners(String event, List<Object> args) {
+        EventEntry<?> eventEntry = eventListeners.get(event);
+        Queue<GlobalDataListener> listeners = eventEntry.getGlobalListeners();
+        if (listeners.isEmpty()) {
+            return;
+        }
+        publish(event, args);
+        for (GlobalDataListener l : listeners) {
+            withCatch(args, () -> l.onData(event, args));
+        }
+    }
 
+    private void publish(String event, List<Object> args) {
+        Packet p = new Packet(PacketType.MESSAGE);
+        p.setSubType(PacketType.EVENT);
+        p.setName(event);
+        p.setName(name);
+        p.setData(args);
+        publish(p);
+    }
+
+    private void publish(Packet packet) {
+        this.storeFactory.pubSubStore().publish(PubSubType.DISPATCH, new DispatchMessage(packet));
     }
 
     private void sendAck(AckRequest ackRequest) {
@@ -321,11 +339,6 @@ public class Namespace implements SocketIONamespace {
     public void joinRoom(String room, UUID sessionId) {
         join(room, sessionId);
         storeFactory.pubSubStore().publish(PubSubType.JOIN, new JoinLeaveMessage(sessionId, room, getName()));
-    }
-
-    public void dispatch(String room, Packet packet) {
-        BroadcastOperations op = getRoomOperations(room);
-        op.dispatch(packet);
     }
 
     private <K, V> void join(ConcurrentMap<K, Set<V>> map, K key, V value) {

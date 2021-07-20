@@ -16,4 +16,8 @@ class SocketIOServerTest {
         s.start();
         TimeUnit.SECONDS.sleep(Integer.MAX_VALUE);
     }
+
+    private void addNS(SocketIOServer s) {
+        SocketIONamespace ns = s.addNamespace("vv");
+    }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,11 +23,9 @@ public interface DataListener<T> {
     /**
      * Invokes when data object received from client
      *
-     * @param client - receiver
-     * @param data - received object
+     * @param client    - receiver
+     * @param data      - received object
      * @param ackSender - ack request
-     *
      */
     void onData(SocketIOClient client, T data, AckRequest ackSender) throws Exception;
-
 }

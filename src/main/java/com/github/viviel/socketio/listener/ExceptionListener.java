@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +24,8 @@ public interface ExceptionListener {
 
     void onEventException(Exception e, List<Object> args, SocketIOClient client);
 
+    void onEventException(Exception e, List<Object> args);
+
     void onDisconnectException(Exception e, SocketIOClient client);
 
     void onConnectException(Exception e, SocketIOClient client);
@@ -31,5 +33,4 @@ public interface ExceptionListener {
     void onPingException(Exception e, SocketIOClient client);
 
     boolean exceptionCaught(ChannelHandlerContext ctx, Throwable e) throws Exception;
-
 }

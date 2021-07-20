@@ -21,6 +21,8 @@ public interface EventListeners {
 
     <T> void addEventListener(String event, Class<T> dataClass, DataListener<T> listener);
 
+    <T> void addGlobalEventListener(String event, Class<T> dataClass, GlobalDataListener listener);
+
     void addDisconnectListener(DisconnectListener listener);
 
     void addConnectListener(ConnectListener listener);

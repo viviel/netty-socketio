@@ -20,8 +20,6 @@ import com.github.viviel.socketio.misc.IterableCollection;
 import com.github.viviel.socketio.protocol.Packet;
 import com.github.viviel.socketio.protocol.PacketType;
 import com.github.viviel.socketio.store.StoreFactory;
-import com.github.viviel.socketio.store.pubsub.DispatchMessage;
-import com.github.viviel.socketio.store.pubsub.PubSubType;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,12 +45,6 @@ public class SingleRoomBroadcastOperations implements BroadcastOperations {
         this.broadcastCallback = broadcastCallback;
     }
 
-    private void push(Packet packet) {
-        this.storeFactory.pubSubStore().publish(
-                PubSubType.DISPATCH,
-                new DispatchMessage(this.room, packet, this.namespace));
-    }
-
     @Override
     public void disconnect() {
         for (SocketIOClient client : clients) {
@@ -62,17 +54,27 @@ public class SingleRoomBroadcastOperations implements BroadcastOperations {
 
     @Override
     public void send(Packet packet) {
-        dispatch(packet);
-        push(packet);
+        doDispatch(packet, null);
     }
 
     @Override
     public void send(String event, Object... data) {
+        Packet packet = toPacket(event, data);
+        send(packet);
+    }
+
+    private Packet toPacket(String event, Object... data) {
+        return toPacket(event, null, data);
+    }
+
+    private Packet toPacket(String event, String callback, Object... data) {
         Packet packet = new Packet(PacketType.MESSAGE);
         packet.setSubType(PacketType.EVENT);
+        packet.setBroadcastCallbackName(callback);
         packet.setName(event);
+        packet.setName(namespace);
         packet.setData(Arrays.asList(data));
-        send(packet);
+        return packet;
     }
 
     @Override
@@ -82,38 +84,20 @@ public class SingleRoomBroadcastOperations implements BroadcastOperations {
 
     @Override
     public void send(String event, String callback, Object... data) {
-        Packet packet = new Packet(PacketType.MESSAGE);
-        packet.setSubType(PacketType.EVENT);
-        packet.setBroadcastCallbackName(callback);
-        packet.setName(event);
-        packet.setData(Arrays.asList(data));
+        Packet packet = toPacket(event, callback, data);
         send(packet);
     }
 
     @Override
     public void send(String event, SocketIOClient exclude, Object... data) {
-        Packet packet = new Packet(PacketType.MESSAGE);
-        packet.setSubType(PacketType.EVENT);
-        packet.setName(event);
-        packet.setData(Arrays.asList(data));
+        Packet packet = toPacket(event, data);
         doDispatch(packet, exclude);
-        push(packet);
     }
 
     @Override
     public void send(String event, String callback, SocketIOClient exclude, Object... data) {
-        Packet packet = new Packet(PacketType.MESSAGE);
-        packet.setSubType(PacketType.EVENT);
-        packet.setBroadcastCallbackName(callback);
-        packet.setName(event);
-        packet.setData(Arrays.asList(data));
+        Packet packet = toPacket(event, callback, data);
         doDispatch(packet, exclude);
-        push(packet);
-    }
-
-    @Override
-    public void dispatch(Packet packet) {
-        doDispatch(packet, null);
     }
 
     private void doDispatch(Packet packet, SocketIOClient exclude) {
@@ -148,24 +132,5 @@ public class SingleRoomBroadcastOperations implements BroadcastOperations {
             client.send(packet, callback.createClientCallback(client, data));
         }
         callback.loopFinished();
-    }
-
-    @Override
-    public void dispatch(String event, Object... data) {
-        Packet packet = new Packet(PacketType.MESSAGE);
-        packet.setSubType(PacketType.EVENT);
-        packet.setName(event);
-        packet.setData(Arrays.asList(data));
-        dispatch(packet);
-    }
-
-    @Override
-    public void dispatch(String event, String callback, Object... data) {
-        Packet packet = new Packet(PacketType.MESSAGE);
-        packet.setSubType(PacketType.EVENT);
-        packet.setBroadcastCallbackName(callback);
-        packet.setName(event);
-        packet.setData(Arrays.asList(data));
-        dispatch(packet);
     }
 }

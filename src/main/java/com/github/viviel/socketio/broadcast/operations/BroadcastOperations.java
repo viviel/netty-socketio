@@ -17,7 +17,6 @@ package com.github.viviel.socketio.broadcast.operations;
 
 import com.github.viviel.socketio.ClientOperations;
 import com.github.viviel.socketio.SocketIOClient;
-import com.github.viviel.socketio.protocol.Packet;
 
 import java.util.Collection;
 
@@ -33,10 +32,4 @@ public interface BroadcastOperations extends ClientOperations {
     void send(String event, SocketIOClient exclude, Object... data);
 
     void send(String event, String callback, SocketIOClient exclude, Object... data);
-
-    void dispatch(Packet packet);
-
-    void dispatch(String event, Object... data);
-
-    void dispatch(String event, String callback, Object... data);
 }

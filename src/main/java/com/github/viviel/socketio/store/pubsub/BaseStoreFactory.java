@@ -25,6 +25,7 @@ import com.github.viviel.socketio.store.StoreFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.UUID;
 
 public abstract class BaseStoreFactory implements StoreFactory {
@@ -58,19 +59,21 @@ public abstract class BaseStoreFactory implements StoreFactory {
     }
 
     protected void initDispatch(NamespacesHub namespacesHub, DispatchMessage msg) {
-        String room = msg.getRoom();
-        String namespaceName = msg.getNamespace();
         Packet packet = msg.getPacket();
-        String event = packet.getName();
-        Object data = packet.getData();
-        Namespace namespace = namespacesHub.get(namespaceName);
+        String nsp = packet.getNsp();
+        Namespace namespace = namespacesHub.get(nsp);
         if (namespace == null) {
             log.error("{}, could not find namespace. package: {}", PubSubType.DISPATCH, packet);
             return;
         }
-        namespace.dispatch(room, packet);
-        namespace.processGlobalListeners(event, data);
+        processGlobalListeners(namespace, packet);
         log.debug("{} packet: {}", PubSubType.DISPATCH, packet);
+    }
+
+    private void processGlobalListeners(Namespace namespace, Packet packet) {
+        String event = packet.getName();
+        Object data = packet.getData();
+        namespace.processGlobalListeners(event, (List<Object>) data);
     }
 
     protected void initJoin(NamespacesHub namespacesHub, JoinLeaveMessage msg) {
