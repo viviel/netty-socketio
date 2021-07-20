@@ -16,7 +16,7 @@
 package com.github.viviel.socketio.handler;
 
 import com.github.viviel.socketio.Configuration;
-import com.github.viviel.socketio.Transport;
+import com.github.viviel.socketio.TransportType;
 import com.github.viviel.socketio.messages.HttpMessage;
 import com.github.viviel.socketio.messages.*;
 import com.github.viviel.socketio.protocol.Packet;
@@ -70,7 +70,6 @@ public class EncoderHandler extends ChannelOutboundHandlerAdapter {
     public EncoderHandler(Configuration configuration, PacketEncoder encoder) throws IOException {
         this.encoder = encoder;
         this.configuration = configuration;
-
         if (configuration.isAddVersionHeader()) {
             readVersion();
         }
@@ -96,110 +95,19 @@ public class EncoderHandler extends ChannelOutboundHandlerAdapter {
         }
     }
 
-    private void write(XHROptionsMessage msg, ChannelHandlerContext ctx, ChannelPromise promise) {
-        HttpResponse res = new DefaultHttpResponse(HTTP_1_1, HttpResponseStatus.OK);
-
-        res.headers().add(HttpHeaderNames.SET_COOKIE, "io=" + msg.getSessionId())
-                .add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
-                .add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS, HttpHeaderNames.CONTENT_TYPE);
-
-        String origin = ctx.channel().attr(ORIGIN).get();
-        addOriginHeaders(origin, res);
-
-        ByteBuf out = encoder.allocateBuffer(ctx.alloc());
-        sendMessage(msg, ctx.channel(), out, res, promise);
-    }
-
-    private void write(XHRPostMessage msg, ChannelHandlerContext ctx, ChannelPromise promise) {
-        ByteBuf out = encoder.allocateBuffer(ctx.alloc());
-        out.writeBytes(OK);
-        sendMessage(msg, ctx.channel(), out, "text/html", promise, HttpResponseStatus.OK);
-    }
-
-    private void sendMessage(HttpMessage msg, Channel channel, ByteBuf out, String type, ChannelPromise promise, HttpResponseStatus status) {
-        HttpResponse res = new DefaultHttpResponse(HTTP_1_1, status);
-
-        res.headers().add(HttpHeaderNames.CONTENT_TYPE, type)
-                .add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-        if (msg.getSessionId() != null) {
-            res.headers().add(HttpHeaderNames.SET_COOKIE, "io=" + msg.getSessionId());
-        }
-
-        String origin = channel.attr(ORIGIN).get();
-        addOriginHeaders(origin, res);
-
-        HttpUtil.setContentLength(res, out.readableBytes());
-
-        // prevent XSS warnings on IE
-        // https://github.com/LearnBoost/socket.io/pull/1333
-        String userAgent = channel.attr(EncoderHandler.USER_AGENT).get();
-        if (userAgent != null && (userAgent.contains(";MSIE") || userAgent.contains("Trident/"))) {
-            res.headers().add("X-XSS-Protection", "0");
-        }
-
-        sendMessage(msg, channel, out, res, promise);
-    }
-
-    private void sendMessage(HttpMessage msg, Channel channel, ByteBuf out, HttpResponse res, ChannelPromise promise) {
-        channel.write(res);
-
-        if (log.isTraceEnabled()) {
-            if (msg.getSessionId() != null) {
-                log.trace("Out message: {} - sessionId: {}", out.toString(CharsetUtil.UTF_8), msg.getSessionId());
-            } else {
-                log.trace("Out message: {}", out.toString(CharsetUtil.UTF_8));
-            }
-        }
-
-        if (out.isReadable()) {
-            channel.write(new DefaultHttpContent(out));
-        } else {
-            out.release();
-        }
-
-        channel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT, promise).addListener(ChannelFutureListener.CLOSE);
-    }
-
-    private void sendError(HttpErrorMessage errorMsg, ChannelHandlerContext ctx, ChannelPromise promise) throws IOException {
-        final ByteBuf encBuf = encoder.allocateBuffer(ctx.alloc());
-        ByteBufOutputStream out = new ByteBufOutputStream(encBuf);
-        encoder.getJsonSupport().writeValue(out, errorMsg.getData());
-
-        sendMessage(errorMsg, ctx.channel(), encBuf, "application/json", promise, HttpResponseStatus.BAD_REQUEST);
-    }
-
-    private void addOriginHeaders(String origin, HttpResponse res) {
-        if (version != null) {
-            res.headers().add(HttpHeaderNames.SERVER, version);
-        }
-
-        if (configuration.getOrigin() != null) {
-            res.headers().add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, configuration.getOrigin());
-            res.headers().add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_CREDENTIALS, Boolean.TRUE);
-        } else {
-            if (origin != null) {
-                res.headers().add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
-                res.headers().add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_CREDENTIALS, Boolean.TRUE);
-            } else {
-                res.headers().add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
-            }
-        }
-    }
-
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (!(msg instanceof HttpMessage)) {
             super.write(ctx, msg, promise);
             return;
         }
-
         if (msg instanceof OutPacketMessage) {
             OutPacketMessage m = (OutPacketMessage) msg;
-            if (m.getTransport() == Transport.WEBSOCKET) {
-                handleWebsocket((OutPacketMessage) msg, ctx, promise);
+            if (m.getTransportType() == TransportType.WEBSOCKET) {
+                handleWebsocket(m, ctx, promise);
             }
-            if (m.getTransport() == Transport.POLLING) {
-                handleHTTP((OutPacketMessage) msg, ctx, promise);
+            if (m.getTransportType() == TransportType.POLLING) {
+                handleHTTP(m, ctx, promise);
             }
         } else if (msg instanceof XHROptionsMessage) {
             write((XHROptionsMessage) msg, ctx, promise);
@@ -210,31 +118,27 @@ public class EncoderHandler extends ChannelOutboundHandlerAdapter {
         }
     }
 
-    private void handleWebsocket(final OutPacketMessage msg, ChannelHandlerContext ctx, ChannelPromise promise) throws IOException {
+    private void handleWebsocket(final OutPacketMessage msg, ChannelHandlerContext ctx, ChannelPromise promise)
+            throws IOException {
         ChannelFutureList writeFutureList = new ChannelFutureList();
-
         while (true) {
-            Queue<Packet> queue = msg.getClientHead().getPacketsQueue(msg.getTransport());
+            Queue<Packet> queue = msg.getClientHead().getPacketsQueue(msg.getTransportType());
             Packet packet = queue.poll();
             if (packet == null) {
                 writeFutureList.setChannelPromise(promise);
                 break;
             }
-
             final ByteBuf out = encoder.allocateBuffer(ctx.alloc());
             encoder.encodePacket(packet, out, ctx.alloc(), true);
-
             WebSocketFrame res = new TextWebSocketFrame(out);
             if (log.isTraceEnabled()) {
                 log.trace("Out message: {} sessionId: {}", out.toString(CharsetUtil.UTF_8), msg.getSessionId());
             }
-
             if (out.isReadable()) {
                 writeFutureList.add(ctx.channel().writeAndFlush(res));
             } else {
                 out.release();
             }
-
             for (ByteBuf buf : packet.getAttachments()) {
                 ByteBuf outBuf = encoder.allocateBuffer(ctx.alloc());
                 outBuf.writeByte(4);
@@ -247,17 +151,15 @@ public class EncoderHandler extends ChannelOutboundHandlerAdapter {
         }
     }
 
-    private void handleHTTP(OutPacketMessage msg, ChannelHandlerContext ctx, ChannelPromise promise) throws IOException {
+    private void handleHTTP(OutPacketMessage msg, ChannelHandlerContext ctx, ChannelPromise promise)
+            throws IOException {
         Channel channel = ctx.channel();
         Attribute<Boolean> attr = channel.attr(WRITE_ONCE);
-
-        Queue<Packet> queue = msg.getClientHead().getPacketsQueue(msg.getTransport());
-
+        Queue<Packet> queue = msg.getClientHead().getPacketsQueue(msg.getTransportType());
         if (!channel.isActive() || queue.isEmpty() || !attr.compareAndSet(null, true)) {
             promise.trySuccess();
             return;
         }
-
         ByteBuf out = encoder.allocateBuffer(ctx.alloc());
         Boolean b64 = ctx.channel().attr(EncoderHandler.B64).get();
         if (b64 != null && b64) {
@@ -271,6 +173,85 @@ public class EncoderHandler extends ChannelOutboundHandlerAdapter {
         } else {
             encoder.encodePackets(queue, out, ctx.alloc(), 50);
             sendMessage(msg, channel, out, "application/octet-stream", promise, HttpResponseStatus.OK);
+        }
+    }
+
+    private void write(XHROptionsMessage msg, ChannelHandlerContext ctx, ChannelPromise promise) {
+        HttpResponse res = new DefaultHttpResponse(HTTP_1_1, HttpResponseStatus.OK);
+        res.headers().add(HttpHeaderNames.SET_COOKIE, "io=" + msg.getSessionId())
+                .add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
+                .add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS, HttpHeaderNames.CONTENT_TYPE);
+        String origin = ctx.channel().attr(ORIGIN).get();
+        addOriginHeaders(origin, res);
+        ByteBuf out = encoder.allocateBuffer(ctx.alloc());
+        sendMessage(msg, ctx.channel(), out, res, promise);
+    }
+
+    private void write(XHRPostMessage msg, ChannelHandlerContext ctx, ChannelPromise promise) {
+        ByteBuf out = encoder.allocateBuffer(ctx.alloc());
+        out.writeBytes(OK);
+        sendMessage(msg, ctx.channel(), out, "text/html", promise, HttpResponseStatus.OK);
+    }
+
+    private void sendMessage(HttpMessage msg, Channel channel, ByteBuf out, String type,
+                             ChannelPromise promise, HttpResponseStatus status) {
+        HttpResponse res = new DefaultHttpResponse(HTTP_1_1, status);
+        res.headers().add(HttpHeaderNames.CONTENT_TYPE, type)
+                .add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+        if (msg.getSessionId() != null) {
+            res.headers().add(HttpHeaderNames.SET_COOKIE, "io=" + msg.getSessionId());
+        }
+        String origin = channel.attr(ORIGIN).get();
+        addOriginHeaders(origin, res);
+        HttpUtil.setContentLength(res, out.readableBytes());
+        // prevent XSS warnings on IE
+        // https://github.com/LearnBoost/socket.io/pull/1333
+        String userAgent = channel.attr(EncoderHandler.USER_AGENT).get();
+        if (userAgent != null && (userAgent.contains(";MSIE") || userAgent.contains("Trident/"))) {
+            res.headers().add("X-XSS-Protection", "0");
+        }
+        sendMessage(msg, channel, out, res, promise);
+    }
+
+    private void sendMessage(HttpMessage msg, Channel channel, ByteBuf out, HttpResponse res, ChannelPromise promise) {
+        channel.write(res);
+        if (log.isTraceEnabled()) {
+            if (msg.getSessionId() != null) {
+                log.trace("Out message: {} - sessionId: {}", out.toString(CharsetUtil.UTF_8), msg.getSessionId());
+            } else {
+                log.trace("Out message: {}", out.toString(CharsetUtil.UTF_8));
+            }
+        }
+        if (out.isReadable()) {
+            channel.write(new DefaultHttpContent(out));
+        } else {
+            out.release();
+        }
+        channel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT, promise).addListener(ChannelFutureListener.CLOSE);
+    }
+
+    private void sendError(HttpErrorMessage errorMsg, ChannelHandlerContext ctx, ChannelPromise promise)
+            throws IOException {
+        final ByteBuf encBuf = encoder.allocateBuffer(ctx.alloc());
+        ByteBufOutputStream out = new ByteBufOutputStream(encBuf);
+        encoder.getJsonSupport().writeValue(out, errorMsg.getData());
+        sendMessage(errorMsg, ctx.channel(), encBuf, "application/json", promise, HttpResponseStatus.BAD_REQUEST);
+    }
+
+    private void addOriginHeaders(String origin, HttpResponse res) {
+        if (version != null) {
+            res.headers().add(HttpHeaderNames.SERVER, version);
+        }
+        if (configuration.getOrigin() != null) {
+            res.headers().add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, configuration.getOrigin());
+            res.headers().add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_CREDENTIALS, Boolean.TRUE);
+        } else {
+            if (origin != null) {
+                res.headers().add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+                res.headers().add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_CREDENTIALS, Boolean.TRUE);
+            } else {
+                res.headers().add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+            }
         }
     }
 
@@ -321,9 +302,8 @@ public class EncoderHandler extends ChannelOutboundHandlerAdapter {
         }
 
         @Override
-        public void operationComplete(Future<Void> voidFuture) throws Exception {
+        public void operationComplete(Future<Void> voidFuture) {
             if (promise != null) validate();
         }
     }
-
 }

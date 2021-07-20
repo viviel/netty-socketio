@@ -37,7 +37,7 @@ public class Configuration {
 
     private String context = "/socket.io";
 
-    private List<Transport> transports = Arrays.asList(Transport.WEBSOCKET, Transport.POLLING);
+    private List<TransportType> transportTypes = Arrays.asList(TransportType.WEBSOCKET, TransportType.POLLING);
 
     private int bossThreads = 0; // 0 = current_processors_amount * 2
     private int workerThreads = 0; // 0 = current_processors_amount * 2
@@ -139,7 +139,7 @@ public class Configuration {
         setTrustStorePassword(conf.getTrustStorePassword());
         setKeyManagerFactoryAlgorithm(conf.getKeyManagerFactoryAlgorithm());
 
-        setTransports(conf.getTransports().toArray(new Transport[0]));
+        setTransports(conf.getTransports().toArray(new TransportType[0]));
         setMaxHttpContentLength(conf.getMaxHttpContentLength());
         setPackagePrefix(conf.getPackagePrefix());
 
@@ -326,17 +326,17 @@ public class Configuration {
     /**
      * Transports supported by server
      *
-     * @param transports - list of transports
+     * @param transportTypes - list of transports
      */
-    public void setTransports(Transport... transports) {
-        if (transports.length == 0) {
+    public void setTransports(TransportType... transportTypes) {
+        if (transportTypes.length == 0) {
             throw new IllegalArgumentException("Transports list can't be empty");
         }
-        this.transports = Arrays.asList(transports);
+        this.transportTypes = Arrays.asList(transportTypes);
     }
 
-    public List<Transport> getTransports() {
-        return transports;
+    public List<TransportType> getTransports() {
+        return transportTypes;
     }
 
     /**

@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 /**
  * @author hangsu.cho@navercorp.com
  */
-public class WebSocketTransportTest {
+public class WebSocketTransportTypeTest {
 
     /**
      * Test method for {@link WebSocketTransport#channelRead()}.

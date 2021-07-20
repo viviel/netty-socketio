@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,14 +18,14 @@ package com.github.viviel.socketio;
 import com.github.viviel.socketio.transport.PollingTransport;
 import com.github.viviel.socketio.transport.WebSocketTransport;
 
-public enum Transport {
+public enum TransportType {
 
     WEBSOCKET(WebSocketTransport.NAME),
     POLLING(PollingTransport.NAME);
 
     private final String value;
 
-    Transport(String value) {
+    TransportType(String value) {
         this.value = value;
     }
 
@@ -33,13 +33,12 @@ public enum Transport {
         return value;
     }
 
-    public static Transport byName(String value) {
-        for (Transport t : Transport.values()) {
+    public static TransportType byName(String value) {
+        for (TransportType t : TransportType.values()) {
             if (t.getValue().equals(value)) {
                 return t;
             }
         }
         throw new IllegalArgumentException("Can't find " + value + " transport");
     }
-
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,9 @@
 package com.github.viviel.socketio.protocol;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsonFormatVisitors.JsonArrayFormatVisitor;
@@ -54,9 +56,8 @@ public class JacksonJsonSupport implements JsonSupport {
         }
 
         @Override
-        public AckArgs deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException,
-                JsonProcessingException {
-            List<Object> args = new ArrayList<Object>();
+        public AckArgs deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+            List<Object> args = new ArrayList<>();
             AckArgs result = new AckArgs(args);
 
             ObjectMapper mapper = (ObjectMapper) jp.getCodec();
@@ -84,13 +85,12 @@ public class JacksonJsonSupport implements JsonSupport {
             }
             return result;
         }
-
     }
 
     public static class EventKey {
 
-        private String namespaceName;
-        private String eventName;
+        private final String namespaceName;
+        private final String eventName;
 
         public EventKey(String namespaceName, String eventName) {
             super();
@@ -128,7 +128,6 @@ public class JacksonJsonSupport implements JsonSupport {
                 return false;
             return true;
         }
-
     }
 
     private class EventDeserializer extends StdDeserializer<Event> {
@@ -137,14 +136,12 @@ public class JacksonJsonSupport implements JsonSupport {
 
         final Map<EventKey, List<Class<?>>> eventMapping = PlatformDependent.newConcurrentHashMap();
 
-
         protected EventDeserializer() {
             super(Event.class);
         }
 
         @Override
-        public Event deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException,
-                JsonProcessingException {
+        public Event deserialize(JsonParser jp, DeserializationContext ctx) throws IOException {
             ObjectMapper mapper = (ObjectMapper) jp.getCodec();
             String eventName = jp.nextTextValue();
 
@@ -156,7 +153,7 @@ public class JacksonJsonSupport implements JsonSupport {
                 }
             }
 
-            List<Object> eventArgs = new ArrayList<Object>();
+            List<Object> eventArgs = new ArrayList<>();
             Event event = new Event(eventName, eventArgs);
             List<Class<?>> eventClasses = eventMapping.get(ek);
             int i = 0;
@@ -183,14 +180,7 @@ public class JacksonJsonSupport implements JsonSupport {
 
         private static final long serialVersionUID = 3420082888596468148L;
 
-        private final ThreadLocal<List<byte[]>> arrays = new ThreadLocal<List<byte[]>>() {
-            @Override
-            protected List<byte[]> initialValue() {
-                return new ArrayList<byte[]>();
-            }
-
-            ;
-        };
+        private final ThreadLocal<List<byte[]>> arrays = ThreadLocal.withInitial(ArrayList::new);
 
         public ByteArraySerializer() {
             super(byte[].class);
@@ -202,20 +192,18 @@ public class JacksonJsonSupport implements JsonSupport {
         }
 
         @Override
-        public void serialize(byte[] value, JsonGenerator jgen, SerializerProvider provider)
-                throws IOException, JsonGenerationException {
-            Map<String, Object> map = new HashMap<String, Object>();
+        public void serialize(byte[] value, JsonGenerator jGen, SerializerProvider provider) throws IOException {
+            Map<String, Object> map = new HashMap<>();
             map.put("num", arrays.get().size());
             map.put("_placeholder", true);
-            jgen.writeObject(map);
+            jGen.writeObject(map);
             arrays.get().add(value);
         }
 
         @Override
-        public void serializeWithType(byte[] value, JsonGenerator jgen, SerializerProvider provider,
-                                      TypeSerializer typeSer)
-                throws IOException, JsonGenerationException {
-            serialize(value, jgen, provider);
+        public void serializeWithType(byte[] value, JsonGenerator jGen, SerializerProvider provider,
+                                      TypeSerializer typeSer) throws IOException {
+            serialize(value, jGen, provider);
         }
 
         @Override
@@ -241,13 +229,12 @@ public class JacksonJsonSupport implements JsonSupport {
         }
 
         public void clear() {
-            arrays.set(new ArrayList<byte[]>());
+            arrays.set(new ArrayList<>());
         }
-
     }
 
 
-    private class ExBeanSerializerModifier extends BeanSerializerModifier {
+    private static class ExBeanSerializerModifier extends BeanSerializerModifier {
 
         private final ByteArraySerializer serializer = new ByteArraySerializer();
 
@@ -264,12 +251,11 @@ public class JacksonJsonSupport implements JsonSupport {
         public ByteArraySerializer getSerializer() {
             return serializer;
         }
-
     }
 
     protected final ExBeanSerializerModifier modifier = new ExBeanSerializerModifier();
-    protected final ThreadLocal<String> namespaceClass = new ThreadLocal<String>();
-    protected final ThreadLocal<AckCallback<?>> currentAckClass = new ThreadLocal<AckCallback<?>>();
+    protected final ThreadLocal<String> namespaceClass = new ThreadLocal<>();
+    protected final ThreadLocal<AckCallback<?>> currentAckClass = new ThreadLocal<>();
     protected final ObjectMapper objectMapper = new ObjectMapper();
     protected final EventDeserializer eventDeserializer = new EventDeserializer();
     protected final AckArgsDeserializer ackArgsDeserializer = new AckArgsDeserializer();
@@ -332,5 +318,4 @@ public class JacksonJsonSupport implements JsonSupport {
     public List<byte[]> getArrays() {
         return modifier.getSerializer().getArrays();
     }
-
 }

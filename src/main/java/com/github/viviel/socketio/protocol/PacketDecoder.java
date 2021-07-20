@@ -142,8 +142,10 @@ public class PacketDecoder {
     }
 
     private Packet decode(ClientHead head, ByteBuf frame) throws IOException {
-        if ((frame.getByte(0) == 'b' && frame.getByte(1) == '4')
-            || frame.getByte(0) == 4 || frame.getByte(0) == 1) {
+        if ((frame.getByte(0) == 'b' && frame.getByte(1) == '4') ||
+            frame.getByte(0) == 4 ||
+            frame.getByte(0) == 1
+        ) {
             return parseBinary(head, frame);
         }
         PacketType type = readType(frame);
@@ -174,8 +176,9 @@ public class PacketDecoder {
 
         int attachmentsDividerIndex = frame.bytesBefore(endIndex, (byte) '-');
         boolean hasAttachments = attachmentsDividerIndex != -1;
-        if (hasAttachments && (PacketType.BINARY_EVENT.equals(innerType)
-                               || PacketType.BINARY_ACK.equals(innerType))) {
+        if (hasAttachments &&
+            (PacketType.BINARY_EVENT.equals(innerType) || PacketType.BINARY_ACK.equals(innerType))
+        ) {
             int attachments = (int) readLong(frame, attachmentsDividerIndex);
             packet.initAttachments(attachments);
             frame.readerIndex(frame.readerIndex() + 1);
@@ -235,10 +238,14 @@ public class PacketDecoder {
                 ByteBuf source = binaryPacket.getDataSource();
                 for (int i = 0; i < binaryPacket.getAttachments().size(); i++) {
                     ByteBuf attachment = binaryPacket.getAttachments().get(i);
-                    ByteBuf scanValue = Unpooled.copiedBuffer("{\"_placeholder\":true,\"num\":" + i + "}", CharsetUtil.UTF_8);
+                    ByteBuf scanValue = Unpooled.copiedBuffer(
+                            "{\"_placeholder\":true,\"num\":" + i + "}", CharsetUtil.UTF_8
+                    );
                     int pos = PacketEncoder.find(source, scanValue);
                     if (pos == -1) {
-                        scanValue = Unpooled.copiedBuffer("{\"num\":" + i + ",\"_placeholder\":true}", CharsetUtil.UTF_8);
+                        scanValue = Unpooled.copiedBuffer(
+                                "{\"num\":" + i + ",\"_placeholder\":true}", CharsetUtil.UTF_8
+                        );
                         pos = PacketEncoder.find(source, scanValue);
                         if (pos == -1) {
                             throw new IllegalStateException("Can't find attachment by index: " + i + " in packet source");
@@ -266,8 +273,7 @@ public class PacketDecoder {
 
     private void parseBody(ClientHead head, ByteBuf frame, Packet packet) throws IOException {
         if (packet.getType() == PacketType.MESSAGE) {
-            if (packet.getSubType() == PacketType.CONNECT
-                || packet.getSubType() == PacketType.DISCONNECT) {
+            if (packet.getSubType() == PacketType.CONNECT || packet.getSubType() == PacketType.DISCONNECT) {
                 packet.setNsp(readNamespace(frame));
             }
 
@@ -281,16 +287,14 @@ public class PacketDecoder {
                 return;
             }
 
-            if (packet.getSubType() == PacketType.ACK
-                || packet.getSubType() == PacketType.BINARY_ACK) {
+            if (packet.getSubType() == PacketType.ACK || packet.getSubType() == PacketType.BINARY_ACK) {
                 ByteBufInputStream in = new ByteBufInputStream(frame);
                 AckCallback<?> callback = ackManager.getCallback(head.getSessionId(), packet.getAckId());
                 AckArgs args = jsonSupport.readAckArgs(in, callback);
                 packet.setData(args.getArgs());
             }
 
-            if (packet.getSubType() == PacketType.EVENT
-                || packet.getSubType() == PacketType.BINARY_EVENT) {
+            if (packet.getSubType() == PacketType.EVENT || packet.getSubType() == PacketType.BINARY_EVENT) {
                 ByteBufInputStream in = new ByteBufInputStream(frame);
                 Event event = jsonSupport.readValue(packet.getNsp(), in, Event.class);
                 packet.setName(event.getName());
@@ -320,5 +324,4 @@ public class PacketDecoder {
         }
         return readString(buffer);
     }
-
 }

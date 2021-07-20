@@ -15,24 +15,24 @@
  */
 package com.github.viviel.socketio.messages;
 
-import com.github.viviel.socketio.Transport;
+import com.github.viviel.socketio.TransportType;
 import com.github.viviel.socketio.handler.ClientHead;
 import io.netty.buffer.ByteBuf;
 
-public class PacketsMessage {
+public class InPacketMessage {
 
     private final ClientHead client;
     private final ByteBuf content;
-    private final Transport transport;
+    private final TransportType transportType;
 
-    public PacketsMessage(ClientHead client, ByteBuf content, Transport transport) {
+    public InPacketMessage(ClientHead client, ByteBuf content, TransportType transportType) {
         this.client = client;
         this.content = content;
-        this.transport = transport;
+        this.transportType = transportType;
     }
 
-    public Transport getTransport() {
-        return transport;
+    public TransportType getTransport() {
+        return transportType;
     }
 
     public ClientHead getClient() {
@@ -42,5 +42,4 @@ public class PacketsMessage {
     public ByteBuf getContent() {
         return content;
     }
-
 }

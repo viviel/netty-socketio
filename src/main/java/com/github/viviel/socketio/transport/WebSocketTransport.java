@@ -17,11 +17,11 @@ package com.github.viviel.socketio.transport;
 
 import com.github.viviel.socketio.Configuration;
 import com.github.viviel.socketio.SocketIOChannelInitializer;
-import com.github.viviel.socketio.Transport;
+import com.github.viviel.socketio.TransportType;
 import com.github.viviel.socketio.handler.AuthorizeHandler;
 import com.github.viviel.socketio.handler.ClientHead;
 import com.github.viviel.socketio.handler.ClientsBox;
-import com.github.viviel.socketio.messages.PacketsMessage;
+import com.github.viviel.socketio.messages.InPacketMessage;
 import com.github.viviel.socketio.protocol.Packet;
 import com.github.viviel.socketio.protocol.PacketType;
 import com.github.viviel.socketio.scheduler.CancelableScheduler;
@@ -70,42 +70,48 @@ public class WebSocketTransport extends ChannelInboundHandlerAdapter {
         if (msg instanceof CloseWebSocketFrame) {
             ctx.channel().writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE);
         } else if (msg instanceof BinaryWebSocketFrame || msg instanceof TextWebSocketFrame) {
-            ByteBufHolder frame = (ByteBufHolder) msg;
-            ClientHead client = clientsBox.get(ctx.channel());
-            if (client == null) {
-                log.debug("Client with was already disconnected. Channel closed!");
-                ctx.channel().close();
-                frame.release();
-                return;
-            }
-            ctx.pipeline().fireChannelRead(new PacketsMessage(client, frame.content(), Transport.WEBSOCKET));
-            frame.release();
+            readWebSocketFrame(ctx, (ByteBufHolder) msg);
         } else if (msg instanceof FullHttpRequest) {
-            FullHttpRequest req = (FullHttpRequest) msg;
-            QueryStringDecoder queryDecoder = new QueryStringDecoder(req.uri());
-            String path = queryDecoder.path();
-            List<String> transport = queryDecoder.parameters().get("transport");
-            List<String> sid = queryDecoder.parameters().get("sid");
-            if (transport != null && NAME.equals(transport.get(0))) {
-                try {
-                    if (!configuration.getTransports().contains(Transport.WEBSOCKET)) {
-                        log.debug("{} transport not supported by configuration.", Transport.WEBSOCKET);
-                        ctx.channel().close();
-                        return;
-                    }
-                    if (sid != null && sid.get(0) != null) {
-                        final UUID sessionId = UUID.fromString(sid.get(0));
-                        handshake(ctx, sessionId, path, req);
-                    } else {
-                        ClientHead client = ctx.channel().attr(ClientHead.CLIENT).get();
-                        // first connection
-                        handshake(ctx, client.getSessionId(), path, req);
-                    }
-                } finally {
-                    req.release();
+            readHttpRequest(ctx, (FullHttpRequest) msg);
+        } else {
+            ctx.fireChannelRead(msg);
+        }
+    }
+
+    private void readWebSocketFrame(ChannelHandlerContext ctx, ByteBufHolder frame) {
+        ClientHead client = clientsBox.get(ctx.channel());
+        if (client == null) {
+            log.debug("Client with was already disconnected. Channel closed!");
+            ctx.channel().close();
+            frame.release();
+            return;
+        }
+        ctx.pipeline().fireChannelRead(new InPacketMessage(client, frame.content(), TransportType.WEBSOCKET));
+        frame.release();
+    }
+
+    private void readHttpRequest(ChannelHandlerContext ctx, FullHttpRequest msg) {
+        QueryStringDecoder queryDecoder = new QueryStringDecoder(msg.uri());
+        String path = queryDecoder.path();
+        List<String> transport = queryDecoder.parameters().get("transport");
+        List<String> sid = queryDecoder.parameters().get("sid");
+        if (transport != null && NAME.equals(transport.get(0))) {
+            try {
+                if (!configuration.getTransports().contains(TransportType.WEBSOCKET)) {
+                    log.debug("{} transport not supported by configuration.", TransportType.WEBSOCKET);
+                    ctx.channel().close();
+                    return;
                 }
-            } else {
-                ctx.fireChannelRead(msg);
+                if (sid != null && sid.get(0) != null) {
+                    final UUID sessionId = UUID.fromString(sid.get(0));
+                    handshake(ctx, sessionId, path, msg);
+                } else {
+                    ClientHead client = ctx.channel().attr(ClientHead.CLIENT).get();
+                    // first connection
+                    handshake(ctx, client.getSessionId(), path, msg);
+                }
+            } finally {
+                msg.release();
             }
         } else {
             ctx.fireChannelRead(msg);
@@ -115,7 +121,7 @@ public class WebSocketTransport extends ChannelInboundHandlerAdapter {
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
         ClientHead client = clientsBox.get(ctx.channel());
-        if (client != null && client.isTransportChannel(ctx.channel(), Transport.WEBSOCKET)) {
+        if (client != null && client.isTransportChannel(ctx.channel(), TransportType.WEBSOCKET)) {
             ctx.flush();
         } else {
             super.channelReadComplete(ctx);
@@ -128,7 +134,7 @@ public class WebSocketTransport extends ChannelInboundHandlerAdapter {
         ClientHead client = clientsBox.get(channel);
         Packet packet = new Packet(PacketType.MESSAGE);
         packet.setSubType(PacketType.DISCONNECT);
-        if (client != null && client.isTransportChannel(ctx.channel(), Transport.WEBSOCKET)) {
+        if (client != null && client.isTransportChannel(ctx.channel(), TransportType.WEBSOCKET)) {
             log.debug("channel inactive {}", client.getSessionId());
             client.onChannelDisconnect();
         }
@@ -174,9 +180,9 @@ public class WebSocketTransport extends ChannelInboundHandlerAdapter {
             channel.close();
             return;
         }
-        client.bindChannel(channel, Transport.WEBSOCKET);
+        client.bindChannel(channel, TransportType.WEBSOCKET);
         authorizeHandler.connect(client);
-        if (client.getCurrentTransport() == Transport.POLLING) {
+        if (client.getCurrentTransportType() == TransportType.POLLING) {
             SchedulerKey key = new SchedulerKey(SchedulerKey.Type.UPGRADE_TIMEOUT, sessionId);
             scheduler.schedule(key, () -> {
                 ClientHead clientHead = clientsBox.get(sessionId);
@@ -198,5 +204,4 @@ public class WebSocketTransport extends ChannelInboundHandlerAdapter {
         }
         return protocol + req.headers().get(HttpHeaderNames.HOST) + req.uri();
     }
-
 }

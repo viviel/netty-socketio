@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +18,21 @@ package com.github.viviel.socketio.protocol;
 
 public enum PacketType {
 
-    OPEN(0), CLOSE(1), PING(2), PONG(3), MESSAGE(4), UPGRADE(5), NOOP(6),
+    OPEN(0),
+    CLOSE(1),
+    PING(2),
+    PONG(3),
+    MESSAGE(4),
+    UPGRADE(5),
+    NOOP(6),
 
-    CONNECT(0, true), DISCONNECT(1, true), EVENT(2, true), ACK(3, true), ERROR(4, true), BINARY_EVENT(5, true), BINARY_ACK(6, true);
+    CONNECT(0, true),
+    DISCONNECT(1, true),
+    EVENT(2, true),
+    ACK(3, true),
+    ERROR(4, true),
+    BINARY_EVENT(5, true),
+    BINARY_ACK(6, true);
 
     public static final PacketType[] VALUES = values();
     private final int value;
@@ -56,5 +68,4 @@ public enum PacketType {
         }
         throw new IllegalArgumentException("Can't parse " + value);
     }
-
 }

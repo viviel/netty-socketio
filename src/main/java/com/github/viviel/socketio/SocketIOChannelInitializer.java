@@ -34,6 +34,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketServerCompressionHandler;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,7 +104,8 @@ public class SocketIOChannelInitializer extends ChannelInitializer<Channel> impl
         }
 
         StoreFactory factory = configuration.getStoreFactory();
-        authorizeHandler = new AuthorizeHandler(connectPath, scheduler, configuration, namespacesHub, factory, this, ackManager, clientsBox);
+        authorizeHandler = new AuthorizeHandler(connectPath, scheduler, configuration, namespacesHub,
+                                                factory, this, ackManager, clientsBox);
         factory.init(namespacesHub, authorizeHandler, jsonSupport);
         xhrPollingTransport = new PollingTransport(decoder, authorizeHandler, clientsBox);
         webSocketTransport = new WebSocketTransport(isSsl, authorizeHandler, configuration, scheduler, clientsBox);
@@ -147,6 +149,9 @@ public class SocketIOChannelInitializer extends ChannelInitializer<Channel> impl
      * @param pipeline - channel pipeline
      */
     protected void addSocketIOHandlers(ChannelPipeline pipeline) {
+        if (log.isDebugEnabled()) {
+            pipeline.addLast("loggingHandler", new LoggingHandler());
+        }
         pipeline.addLast(HTTP_REQUEST_DECODER, new HttpRequestDecoder());
         pipeline.addLast(HTTP_AGGREGATOR, new HttpObjectAggregator(configuration.getMaxHttpContentLength()) {
             @Override
@@ -197,7 +202,9 @@ public class SocketIOChannelInitializer extends ChannelInitializer<Channel> impl
         authorizeHandler.onDisconnect(client);
         configuration.getStoreFactory().onDisconnect(client);
 
-        configuration.getStoreFactory().pubSubStore().publish(PubSubType.DISCONNECT, new DisconnectMessage(client.getSessionId()));
+        configuration.getStoreFactory()
+                .pubSubStore()
+                .publish(PubSubType.DISCONNECT, new DisconnectMessage(client.getSessionId()));
 
         log.debug("Client with sessionId: {} disconnected", client.getSessionId());
     }

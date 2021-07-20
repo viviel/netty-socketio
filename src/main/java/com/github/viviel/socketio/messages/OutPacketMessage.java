@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,27 +15,25 @@
  */
 package com.github.viviel.socketio.messages;
 
-import com.github.viviel.socketio.Transport;
+import com.github.viviel.socketio.TransportType;
 import com.github.viviel.socketio.handler.ClientHead;
 
 public class OutPacketMessage extends HttpMessage {
 
     private final ClientHead clientHead;
-    private final Transport transport;
+    private final TransportType transportType;
 
-    public OutPacketMessage(ClientHead clientHead, Transport transport) {
+    public OutPacketMessage(ClientHead clientHead, TransportType transportType) {
         super(clientHead.getOrigin(), clientHead.getSessionId());
-
         this.clientHead = clientHead;
-        this.transport = transport;
+        this.transportType = transportType;
     }
 
-    public Transport getTransport() {
-        return transport;
+    public TransportType getTransportType() {
+        return transportType;
     }
 
     public ClientHead getClientHead() {
         return clientHead;
     }
-
 }

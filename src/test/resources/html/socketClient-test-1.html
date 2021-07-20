@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>websocket-java-socket-io</title>
-    <!--    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>-->
-    <script src="./js/socket.io-client.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>
+    <!--    <script src="./js/socket.io-client.js"></script>-->
     <script src="./js/jquery-3.5.1.js"></script>
     <script src="./js/socket-common.js"></script>
 </head>
@@ -16,8 +16,8 @@
 
 <script type="text/javascript">
     const host = 'http://localhost:8888';
-    const liveId = 1;
-    const socket = io(host + '/' + liveId);
+    const ns = 'vv';
+    const socket = io(host + '/' + ns);
     addEvent();
 </script>
 </html>

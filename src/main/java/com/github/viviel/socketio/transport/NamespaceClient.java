@@ -18,7 +18,7 @@ package com.github.viviel.socketio.transport;
 import com.github.viviel.socketio.AckCallback;
 import com.github.viviel.socketio.HandshakeData;
 import com.github.viviel.socketio.SocketIOClient;
-import com.github.viviel.socketio.Transport;
+import com.github.viviel.socketio.TransportType;
 import com.github.viviel.socketio.handler.ClientHead;
 import com.github.viviel.socketio.namespace.Namespace;
 import com.github.viviel.socketio.protocol.Packet;
@@ -51,8 +51,8 @@ public class NamespaceClient implements SocketIOClient {
     }
 
     @Override
-    public Transport getTransport() {
-        return baseClient.getCurrentTransport();
+    public TransportType getTransport() {
+        return baseClient.getCurrentTransportType();
     }
 
     @Override

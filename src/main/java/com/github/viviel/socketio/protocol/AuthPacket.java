@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,6 @@
 package com.github.viviel.socketio.protocol;
 
 import java.util.UUID;
-
 
 public class AuthPacket {
 
@@ -48,5 +47,4 @@ public class AuthPacket {
     public String[] getUpgrades() {
         return upgrades;
     }
-
 }

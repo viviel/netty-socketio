@@ -56,14 +56,14 @@ public class OnEventScanner implements AnnotationScanner {
 
             namespace.addMultiTypeEventListener(annotation.value(), new MultiTypeEventListener() {
                 @Override
-                public void onData(SocketIOClient client, MultiTypeArgs data, AckRequest ackSender) {
+                public void onData(SocketIOClient client, MultiTypeArgs data, AckRequest ack) {
                     try {
                         Object[] args = new Object[method.getParameterTypes().length];
                         if (socketIOClientIndex != -1) {
                             args[socketIOClientIndex] = client;
                         }
                         if (ackRequestIndex != -1) {
-                            args[ackRequestIndex] = ackSender;
+                            args[ackRequestIndex] = ack;
                         }
                         int i = 0;
                         for (int index : dataIndexes) {
@@ -86,14 +86,14 @@ public class OnEventScanner implements AnnotationScanner {
 
             namespace.addEventListener(annotation.value(), objectType, new DataListener<Object>() {
                 @Override
-                public void onData(SocketIOClient client, Object data, AckRequest ackSender) {
+                public void onData(SocketIOClient client, Object data, AckRequest ack) {
                     try {
                         Object[] args = new Object[method.getParameterTypes().length];
                         if (socketIOClientIndex != -1) {
                             args[socketIOClientIndex] = client;
                         }
                         if (ackRequestIndex != -1) {
-                            args[ackRequestIndex] = ackSender;
+                            args[ackRequestIndex] = ack;
                         }
                         if (!dataIndexes.isEmpty()) {
                             int dataIndex = dataIndexes.iterator().next();

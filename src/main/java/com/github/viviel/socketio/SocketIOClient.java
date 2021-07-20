@@ -41,7 +41,7 @@ public interface SocketIOClient extends ClientOperations, Store {
      *
      * @return transport protocol
      */
-    Transport getTransport();
+    TransportType getTransport();
 
     /**
      * Send event with ack callback

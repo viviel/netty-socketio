@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,11 +38,11 @@ public class PacketEncoder {
     private static final byte[] JSONP_END = "');".getBytes(CharsetUtil.UTF_8);
 
     private final JsonSupport jsonSupport;
-    private final Configuration configuration;
+    private final Configuration config;
 
-    public PacketEncoder(Configuration configuration, JsonSupport jsonSupport) {
+    public PacketEncoder(Configuration config, JsonSupport jsonSupport) {
         this.jsonSupport = jsonSupport;
-        this.configuration = configuration;
+        this.config = config;
     }
 
     public JsonSupport getJsonSupport() {
@@ -50,14 +50,14 @@ public class PacketEncoder {
     }
 
     public ByteBuf allocateBuffer(ByteBufAllocator allocator) {
-        if (configuration.isPreferDirectBuffer()) {
+        if (config.isPreferDirectBuffer()) {
             return allocator.ioBuffer();
         }
-
         return allocator.heapBuffer();
     }
 
-    public void encodeJsonP(Integer jsonpIndex, Queue<Packet> packets, ByteBuf out, ByteBufAllocator allocator, int limit) throws IOException {
+    public void encodeJsonP(Integer jsonpIndex, Queue<Packet> packets, ByteBuf out,
+                            ByteBufAllocator allocator, int limit) throws IOException {
         boolean jsonpMode = jsonpIndex != null;
 
         ByteBuf buf = allocateBuffer(allocator);
@@ -119,7 +119,8 @@ public class PacketEncoder {
         }
     }
 
-    public void encodePackets(Queue<Packet> packets, ByteBuf buffer, ByteBufAllocator allocator, int limit) throws IOException {
+    public void encodePackets(Queue<Packet> packets, ByteBuf buffer, ByteBufAllocator allocator, int limit)
+            throws IOException {
         int i = 0;
         while (true) {
             Packet packet = packets.poll();
@@ -144,26 +145,41 @@ public class PacketEncoder {
         return (byte) (number ^ 0x30);
     }
 
-    static final char[] DigitTens = {'0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '1', '1', '1',
-            '1', '1', '1', '1', '1', '1', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '3', '3', '3',
-            '3', '3', '3', '3', '3', '3', '3', '4', '4', '4', '4', '4', '4', '4', '4', '4', '4', '5', '5',
-            '5', '5', '5', '5', '5', '5', '5', '5', '6', '6', '6', '6', '6', '6', '6', '6', '6', '6', '7',
-            '7', '7', '7', '7', '7', '7', '7', '7', '7', '8', '8', '8', '8', '8', '8', '8', '8', '8', '8',
-            '9', '9', '9', '9', '9', '9', '9', '9', '9', '9',};
+    static final char[] DigitTens = {
+            '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
+            '1', '1', '1', '1', '1', '1', '1', '1', '1', '1',
+            '2', '2', '2', '2', '2', '2', '2', '2', '2', '2',
+            '3', '3', '3', '3', '3', '3', '3', '3', '3', '3',
+            '4', '4', '4', '4', '4', '4', '4', '4', '4', '4',
+            '5', '5', '5', '5', '5', '5', '5', '5', '5', '5',
+            '6', '6', '6', '6', '6', '6', '6', '6', '6', '6',
+            '7', '7', '7', '7', '7', '7', '7', '7', '7', '7',
+            '8', '8', '8', '8', '8', '8', '8', '8', '8', '8',
+            '9', '9', '9', '9', '9', '9', '9', '9', '9', '9',
+    };
 
-    static final char[] DigitOnes = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3',
-            '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2',
-            '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1',
-            '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-            '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',};
+    static final char[] DigitOnes = {
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    };
 
-    static final char[] digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e',
-            'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
-            'y', 'z'};
+    static final char[] digits = {
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+            'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
+    };
 
-    static final int[] sizeTable = {9, 99, 999, 9999, 99999, 999999, 9999999, 99999999, 999999999,
-            Integer.MAX_VALUE};
+    static final int[] sizeTable = {
+            9, 99, 999, 9999, 99999, 999999, 9999999, 99999999, 999999999, Integer.MAX_VALUE
+    };
 
     // Requires positive x
     static int stringSize(long x) {
@@ -194,14 +210,12 @@ public class PacketEncoder {
 
         // Fall thru to fast mode for smaller numbers
         // assert(i <= 65536, i);
-        for (; ; ) {
+        do {
             q = (i * 52429) >>> (16 + 3);
             r = i - ((q << 3) + (q << 1)); // r = i-(q*10) ...
             buf[--charPos] = (byte) digits[(int) r];
             i = q;
-            if (i == 0)
-                break;
-        }
+        } while (i != 0);
         if (sign != 0) {
             buf[--charPos] = sign;
         }
@@ -226,94 +240,26 @@ public class PacketEncoder {
         return res;
     }
 
-    public void encodePacket(Packet packet, ByteBuf buffer, ByteBufAllocator allocator, boolean binary) throws IOException {
+    public void encodePacket(Packet packet, ByteBuf buffer, ByteBufAllocator allocator, boolean binary)
+            throws IOException {
         ByteBuf buf = buffer;
         if (!binary) {
             buf = allocateBuffer(allocator);
         }
         byte type = toChar(packet.getType().getValue());
         buf.writeByte(type);
-
         try {
             switch (packet.getType()) {
-
                 case PONG: {
-                    buf.writeBytes(packet.getData().toString().getBytes(CharsetUtil.UTF_8));
+                    pong(packet, buf);
                     break;
                 }
-
                 case OPEN: {
-                    ByteBufOutputStream out = new ByteBufOutputStream(buf);
-                    jsonSupport.writeValue(out, packet.getData());
+                    open(packet, buf);
                     break;
                 }
-
                 case MESSAGE: {
-
-                    ByteBuf encBuf = null;
-
-                    if (packet.getSubType() == PacketType.ERROR) {
-                        encBuf = allocateBuffer(allocator);
-
-                        ByteBufOutputStream out = new ByteBufOutputStream(encBuf);
-                        jsonSupport.writeValue(out, packet.getData());
-                    }
-
-                    if (packet.getSubType() == PacketType.EVENT
-                        || packet.getSubType() == PacketType.ACK) {
-
-                        List<Object> values = new ArrayList<Object>();
-                        if (packet.getSubType() == PacketType.EVENT) {
-                            values.add(packet.getName());
-                        }
-
-                        encBuf = allocateBuffer(allocator);
-
-                        List<Object> args = packet.getData();
-                        values.addAll(args);
-                        ByteBufOutputStream out = new ByteBufOutputStream(encBuf);
-                        jsonSupport.writeValue(out, values);
-
-                        if (!jsonSupport.getArrays().isEmpty()) {
-                            packet.initAttachments(jsonSupport.getArrays().size());
-                            for (byte[] array : jsonSupport.getArrays()) {
-                                packet.addAttachment(Unpooled.wrappedBuffer(array));
-                            }
-                            packet.setSubType(packet.getSubType() == PacketType.ACK
-                                                      ? PacketType.BINARY_ACK : PacketType.BINARY_EVENT);
-                        }
-                    }
-
-                    byte subType = toChar(packet.getSubType().getValue());
-                    buf.writeByte(subType);
-
-                    if (packet.hasAttachments()) {
-                        byte[] ackId = toChars(packet.getAttachments().size());
-                        buf.writeBytes(ackId);
-                        buf.writeByte('-');
-                    }
-
-                    if (packet.getSubType() == PacketType.CONNECT) {
-                        if (!packet.getNsp().isEmpty()) {
-                            buf.writeBytes(packet.getNsp().getBytes(CharsetUtil.UTF_8));
-                        }
-                    } else {
-                        if (!packet.getNsp().isEmpty()) {
-                            buf.writeBytes(packet.getNsp().getBytes(CharsetUtil.UTF_8));
-                            buf.writeByte(',');
-                        }
-                    }
-
-                    if (packet.getAckId() != null) {
-                        byte[] ackId = toChars(packet.getAckId());
-                        buf.writeBytes(ackId);
-                    }
-
-                    if (encBuf != null) {
-                        buf.writeBytes(encBuf);
-                        encBuf.release();
-                    }
-
+                    message(packet, buf, allocator);
                     break;
                 }
             }
@@ -325,9 +271,81 @@ public class PacketEncoder {
                 buffer.writeBytes(longToBytes(length));
                 buffer.writeByte(0xff);
                 buffer.writeBytes(buf);
-
                 buf.release();
             }
+        }
+    }
+
+    private void pong(Packet packet, ByteBuf buf) {
+        buf.writeBytes(packet.getData().toString().getBytes(CharsetUtil.UTF_8));
+    }
+
+    private void open(Packet packet, ByteBuf buf) throws IOException {
+        ByteBufOutputStream out = new ByteBufOutputStream(buf);
+        jsonSupport.writeValue(out, packet.getData());
+    }
+
+    private void message(Packet packet, ByteBuf buf, ByteBufAllocator allocator) throws IOException {
+        ByteBuf encBuf = null;
+
+        if (packet.getSubType() == PacketType.ERROR) {
+            encBuf = allocateBuffer(allocator);
+
+            ByteBufOutputStream out = new ByteBufOutputStream(encBuf);
+            jsonSupport.writeValue(out, packet.getData());
+        }
+
+        if (packet.getSubType() == PacketType.EVENT || packet.getSubType() == PacketType.ACK) {
+            List<Object> values = new ArrayList<>();
+            if (packet.getSubType() == PacketType.EVENT) {
+                values.add(packet.getName());
+            }
+
+            encBuf = allocateBuffer(allocator);
+
+            List<Object> args = packet.getData();
+            values.addAll(args);
+            ByteBufOutputStream out = new ByteBufOutputStream(encBuf);
+            jsonSupport.writeValue(out, values);
+
+            if (!jsonSupport.getArrays().isEmpty()) {
+                packet.initAttachments(jsonSupport.getArrays().size());
+                for (byte[] array : jsonSupport.getArrays()) {
+                    packet.addAttachment(Unpooled.wrappedBuffer(array));
+                }
+                packet.setSubType(packet.getSubType() == PacketType.ACK ?
+                                          PacketType.BINARY_ACK : PacketType.BINARY_EVENT);
+            }
+        }
+
+        byte subType = toChar(packet.getSubType().getValue());
+        buf.writeByte(subType);
+
+        if (packet.hasAttachments()) {
+            byte[] ackId = toChars(packet.getAttachments().size());
+            buf.writeBytes(ackId);
+            buf.writeByte('-');
+        }
+
+        if (packet.getSubType() == PacketType.CONNECT) {
+            if (!packet.getNsp().isEmpty()) {
+                buf.writeBytes(packet.getNsp().getBytes(CharsetUtil.UTF_8));
+            }
+        } else {
+            if (!packet.getNsp().isEmpty()) {
+                buf.writeBytes(packet.getNsp().getBytes(CharsetUtil.UTF_8));
+                buf.writeByte(',');
+            }
+        }
+
+        if (packet.getAckId() != null) {
+            byte[] ackId = toChars(packet.getAckId());
+            buf.writeBytes(ackId);
+        }
+
+        if (encBuf != null) {
+            buf.writeBytes(encBuf);
+            encBuf.release();
         }
     }
 
@@ -348,5 +366,4 @@ public class PacketEncoder {
         }
         return true;
     }
-
 }

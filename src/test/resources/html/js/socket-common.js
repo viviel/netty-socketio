@@ -27,15 +27,24 @@ function addEvent() {
     });
 }
 
+function connect() {
+    socket.connect();
+}
+
+function disconnect() {
+    socket.disconnect();
+}
+
 function test() {
     appendContent('test');
 }
 
 function sendMsg() {
     let msg = {
-        "id": 6
+        "id": 6,
+        "msg": "vv"
     };
-    socket.emit('test', msg, function (data) {
+    socket.emit('test', msg, msg, function (data) {
         appendContent(data);
     });
 }

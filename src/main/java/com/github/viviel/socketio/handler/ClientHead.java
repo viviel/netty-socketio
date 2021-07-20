@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +18,7 @@ package com.github.viviel.socketio.handler;
 import com.github.viviel.socketio.Configuration;
 import com.github.viviel.socketio.DisconnectableHub;
 import com.github.viviel.socketio.HandshakeData;
-import com.github.viviel.socketio.Transport;
+import com.github.viviel.socketio.TransportType;
 import com.github.viviel.socketio.ack.AckManager;
 import com.github.viviel.socketio.messages.OutPacketMessage;
 import com.github.viviel.socketio.namespace.Namespace;
@@ -48,28 +48,29 @@ public class ClientHead {
 
     private static final Logger log = LoggerFactory.getLogger(ClientHead.class);
 
-    public static final AttributeKey<ClientHead> CLIENT = AttributeKey.<ClientHead>valueOf("client");
+    public static final AttributeKey<ClientHead> CLIENT = AttributeKey.valueOf("client");
 
     private final AtomicBoolean disconnected = new AtomicBoolean();
     private final Map<Namespace, NamespaceClient> namespaceClients = PlatformDependent.newConcurrentHashMap();
-    private final Map<Transport, TransportState> channels = new HashMap<Transport, TransportState>(2);
+    private final Map<TransportType, Transport> channels = new HashMap<>(2);
     private final HandshakeData handshakeData;
     private final UUID sessionId;
 
     private final Store store;
     private final DisconnectableHub disconnectableHub;
     private final AckManager ackManager;
-    private ClientsBox clientsBox;
+    private final ClientsBox clientsBox;
     private final CancelableScheduler disconnectScheduler;
     private final Configuration configuration;
 
     private Packet lastBinaryPacket;
 
     // TODO use lazy set
-    private volatile Transport currentTransport;
+    private volatile TransportType currentTransportType;
 
     public ClientHead(UUID sessionId, AckManager ackManager, DisconnectableHub disconnectable,
-                      StoreFactory storeFactory, HandshakeData handshakeData, ClientsBox clientsBox, Transport transport, CancelableScheduler disconnectScheduler,
+                      StoreFactory storeFactory, HandshakeData handshakeData, ClientsBox clientsBox,
+                      TransportType transportType, CancelableScheduler disconnectScheduler,
                       Configuration configuration) {
         this.sessionId = sessionId;
         this.ackManager = ackManager;
@@ -77,29 +78,27 @@ public class ClientHead {
         this.store = storeFactory.createStore(sessionId);
         this.handshakeData = handshakeData;
         this.clientsBox = clientsBox;
-        this.currentTransport = transport;
+        this.currentTransportType = transportType;
         this.disconnectScheduler = disconnectScheduler;
         this.configuration = configuration;
 
-        channels.put(Transport.POLLING, new TransportState());
-        channels.put(Transport.WEBSOCKET, new TransportState());
+        channels.put(TransportType.POLLING, new Transport());
+        channels.put(TransportType.WEBSOCKET, new Transport());
     }
 
-    public void bindChannel(Channel channel, Transport transport) {
-        log.debug("binding channel: {} to transport: {}", channel, transport);
-
-        TransportState state = channels.get(transport);
-        Channel prevChannel = state.update(channel);
+    public void bindChannel(Channel channel, TransportType transportType) {
+        log.debug("binding channel: {} to transport: {}", channel, transportType);
+        Transport transport = channels.get(transportType);
+        Channel prevChannel = transport.update(channel);
         if (prevChannel != null) {
             clientsBox.remove(prevChannel);
         }
         clientsBox.add(channel, this);
-
-        sendPackets(transport, channel);
+        sendPackets(transportType, channel);
     }
 
     public void releasePollingChannel(Channel channel) {
-        TransportState state = channels.get(Transport.POLLING);
+        Transport state = channels.get(TransportType.POLLING);
         if (channel.equals(state.getChannel())) {
             clientsBox.remove(channel);
             state.update(null);
@@ -111,7 +110,7 @@ public class ClientHead {
     }
 
     public ChannelFuture send(Packet packet) {
-        return send(packet, getCurrentTransport());
+        return send(packet, getCurrentTransportType());
     }
 
     public void cancelPingTimeout() {
@@ -121,32 +120,31 @@ public class ClientHead {
 
     public void schedulePingTimeout() {
         SchedulerKey key = new SchedulerKey(SchedulerKey.Type.PING_TIMEOUT, sessionId);
-        disconnectScheduler.schedule(key, new Runnable() {
-            @Override
-            public void run() {
-                ClientHead client = clientsBox.get(sessionId);
-                if (client != null) {
-                    client.disconnect();
-                    log.debug("{} removed due to ping timeout", sessionId);
-                }
+        disconnectScheduler.schedule(key, () -> {
+            ClientHead client = clientsBox.get(sessionId);
+            if (client != null) {
+                client.disconnect();
+                log.debug("{} removed due to ping timeout", sessionId);
             }
         }, configuration.getPingTimeout() + configuration.getPingInterval(), TimeUnit.MILLISECONDS);
     }
 
-    public ChannelFuture send(Packet packet, Transport transport) {
-        TransportState state = channels.get(transport);
+    public ChannelFuture send(Packet packet, TransportType transportType) {
+        Transport state = channels.get(transportType);
         state.getPacketsQueue().add(packet);
 
         Channel channel = state.getChannel();
-        if (channel == null
-            || (transport == Transport.POLLING && channel.attr(EncoderHandler.WRITE_ONCE).get() != null)) {
+        if (channel == null ||
+            (transportType == TransportType.POLLING && channel.attr(EncoderHandler.WRITE_ONCE).get() != null)
+        ) {
             return null;
         }
-        return sendPackets(transport, channel);
+        return sendPackets(transportType, channel);
     }
 
-    private ChannelFuture sendPackets(Transport transport, Channel channel) {
-        return channel.writeAndFlush(new OutPacketMessage(this, transport));
+    private ChannelFuture sendPackets(TransportType transportType, Channel channel) {
+        OutPacketMessage msg = new OutPacketMessage(this, transportType);
+        return channel.writeAndFlush(msg);
     }
 
     public void removeNamespaceClient(NamespaceClient client) {
@@ -181,7 +179,7 @@ public class ClientHead {
         for (NamespaceClient client : namespaceClients.values()) {
             client.onDisconnect();
         }
-        for (TransportState state : channels.values()) {
+        for (Transport state : channels.values()) {
             if (state.getChannel() != null) {
                 clientsBox.remove(state.getChannel());
             }
@@ -214,7 +212,7 @@ public class ClientHead {
     }
 
     public boolean isChannelOpen() {
-        for (TransportState state : channels.values()) {
+        for (Transport state : channels.values()) {
             if (state.getChannel() != null
                 && state.getChannel().isActive()) {
                 return true;
@@ -227,37 +225,37 @@ public class ClientHead {
         return store;
     }
 
-    public boolean isTransportChannel(Channel channel, Transport transport) {
-        TransportState state = channels.get(transport);
+    public boolean isTransportChannel(Channel channel, TransportType transportType) {
+        Transport state = channels.get(transportType);
         if (state.getChannel() == null) {
             return false;
         }
         return state.getChannel().equals(channel);
     }
 
-    public void upgradeCurrentTransport(Transport currentTransport) {
-        TransportState state = channels.get(currentTransport);
+    public void upgradeCurrentTransport(TransportType transportType) {
+        Transport state = channels.get(transportType);
 
-        for (Entry<Transport, TransportState> entry : channels.entrySet()) {
-            if (!entry.getKey().equals(currentTransport)) {
+        for (Entry<TransportType, Transport> entry : channels.entrySet()) {
+            if (!entry.getKey().equals(transportType)) {
 
                 Queue<Packet> queue = entry.getValue().getPacketsQueue();
                 state.setPacketsQueue(queue);
 
-                sendPackets(currentTransport, state.getChannel());
-                this.currentTransport = currentTransport;
-                log.debug("Transport upgraded to: {} for: {}", currentTransport, sessionId);
+                sendPackets(transportType, state.getChannel());
+                this.currentTransportType = transportType;
+                log.debug("Transport upgraded to: {} for: {}", transportType, sessionId);
                 break;
             }
         }
     }
 
-    public Transport getCurrentTransport() {
-        return currentTransport;
+    public TransportType getCurrentTransportType() {
+        return currentTransportType;
     }
 
-    public Queue<Packet> getPacketsQueue(Transport transport) {
-        return channels.get(transport).getPacketsQueue();
+    public Queue<Packet> getPacketsQueue(TransportType transportType) {
+        return channels.get(transportType).getPacketsQueue();
     }
 
     public void setLastBinaryPacket(Packet lastBinaryPacket) {
@@ -267,5 +265,4 @@ public class ClientHead {
     public Packet getLastBinaryPacket() {
         return lastBinaryPacket;
     }
-
 }

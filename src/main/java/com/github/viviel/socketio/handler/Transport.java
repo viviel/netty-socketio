@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,9 +21,9 @@ import io.netty.channel.Channel;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class TransportState {
+public class Transport {
 
-    private Queue<Packet> packetsQueue = new ConcurrentLinkedQueue<Packet>();
+    private Queue<Packet> packetsQueue = new ConcurrentLinkedQueue<>();
     private Channel channel;
 
     public void setPacketsQueue(Queue<Packet> packetsQueue) {
@@ -43,5 +43,4 @@ public class TransportState {
         this.channel = channel;
         return prevChannel;
     }
-
 }

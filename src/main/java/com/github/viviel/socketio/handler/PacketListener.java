@@ -16,7 +16,7 @@
 package com.github.viviel.socketio.handler;
 
 import com.github.viviel.socketio.AckRequest;
-import com.github.viviel.socketio.Transport;
+import com.github.viviel.socketio.TransportType;
 import com.github.viviel.socketio.ack.AckManager;
 import com.github.viviel.socketio.namespace.Namespace;
 import com.github.viviel.socketio.namespace.NamespacesHub;
@@ -43,7 +43,7 @@ public class PacketListener {
         this.scheduler = scheduler;
     }
 
-    public void onPacket(Packet packet, NamespaceClient client, Transport transport) {
+    public void onPacket(Packet packet, NamespaceClient client, TransportType transportType) {
         final AckRequest ackRequest = new AckRequest(packet, client);
 
         if (packet.isAckRequested()) {
@@ -55,10 +55,10 @@ public class PacketListener {
                 Packet outPacket = new Packet(PacketType.PONG);
                 outPacket.setData(packet.getData());
                 // TODO use future
-                client.getBaseClient().send(outPacket, transport);
+                client.getBaseClient().send(outPacket, transportType);
 
                 if ("probe".equals(packet.getData())) {
-                    client.getBaseClient().send(new Packet(PacketType.NOOP), Transport.POLLING);
+                    client.getBaseClient().send(new Packet(PacketType.NOOP), TransportType.POLLING);
                 } else {
                     client.getBaseClient().schedulePingTimeout();
                 }
@@ -73,7 +73,7 @@ public class PacketListener {
                 SchedulerKey key = new SchedulerKey(SchedulerKey.Type.UPGRADE_TIMEOUT, client.getSessionId());
                 scheduler.cancel(key);
 
-                client.getBaseClient().upgradeCurrentTransport(transport);
+                client.getBaseClient().upgradeCurrentTransport(transportType);
                 break;
             }
 
@@ -88,7 +88,7 @@ public class PacketListener {
                     Namespace namespace = namespacesHub.get(packet.getNsp());
                     namespace.onConnect(client);
                     // send connect handshake packet back to client
-                    client.getBaseClient().send(packet, transport);
+                    client.getBaseClient().send(packet, transportType);
                 }
 
                 if (packet.getSubType() == PacketType.ACK || packet.getSubType() == PacketType.BINARY_ACK) {

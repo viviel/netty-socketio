@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2012-2019 Nikita Koksharov
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -57,9 +57,7 @@ public class ClientsBox {
         channel2clients.remove(channel);
     }
 
-
     public ClientHead get(Channel channel) {
         return channel2clients.get(channel);
     }
-
 }

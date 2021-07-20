@@ -16,7 +16,7 @@
 package com.github.viviel.socketio.handler;
 
 import com.github.viviel.socketio.listener.ExceptionListener;
-import com.github.viviel.socketio.messages.PacketsMessage;
+import com.github.viviel.socketio.messages.InPacketMessage;
 import com.github.viviel.socketio.namespace.Namespace;
 import com.github.viviel.socketio.namespace.NamespacesHub;
 import com.github.viviel.socketio.protocol.Packet;
@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Sharable
-public class InPacketHandler extends SimpleChannelInboundHandler<PacketsMessage> {
+public class InPacketHandler extends SimpleChannelInboundHandler<InPacketMessage> {
 
     private static final Logger log = LoggerFactory.getLogger(InPacketHandler.class);
 
@@ -41,7 +41,8 @@ public class InPacketHandler extends SimpleChannelInboundHandler<PacketsMessage>
     private final NamespacesHub namespacesHub;
     private final ExceptionListener exceptionListener;
 
-    public InPacketHandler(PacketListener packetListener, PacketDecoder decoder, NamespacesHub namespacesHub, ExceptionListener exceptionListener) {
+    public InPacketHandler(PacketListener packetListener, PacketDecoder decoder,
+                           NamespacesHub namespacesHub, ExceptionListener exceptionListener) {
         super();
         this.packetListener = packetListener;
         this.decoder = decoder;
@@ -50,11 +51,10 @@ public class InPacketHandler extends SimpleChannelInboundHandler<PacketsMessage>
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, PacketsMessage message)
+    protected void channelRead0(ChannelHandlerContext ctx, InPacketMessage message)
             throws Exception {
         ByteBuf content = message.getContent();
         ClientHead client = message.getClient();
-
         if (log.isTraceEnabled()) {
             log.trace("In message: {} sessionId: {}", content.toString(CharsetUtil.UTF_8), client.getSessionId());
         }
@@ -74,17 +74,17 @@ public class InPacketHandler extends SimpleChannelInboundHandler<PacketsMessage>
                         client.send(p);
                         return;
                     }
-                    log.debug("Can't find namespace for endpoint: {}, sessionId: {} probably it was removed.", packet.getNsp(), client.getSessionId());
+                    log.debug("Can't find namespace for endpoint: {}, sessionId: {} probably it was removed.",
+                              packet.getNsp(), client.getSessionId());
                     return;
                 }
-
                 if (packet.getSubType() == PacketType.CONNECT) {
                     client.addNamespaceClient(ns);
                 }
-
                 NamespaceClient nClient = client.getChildClient(ns);
                 if (nClient == null) {
-                    log.debug("Can't find namespace client in namespace: {}, sessionId: {} probably it was disconnected.", ns.getName(), client.getSessionId());
+                    log.debug("Can't find namespace client in namespace: {}, sessionId: {} probably it was disconnected.",
+                              ns.getName(), client.getSessionId());
                     return;
                 }
                 packetListener.onPacket(packet, nClient, message.getTransport());
@@ -102,5 +102,4 @@ public class InPacketHandler extends SimpleChannelInboundHandler<PacketsMessage>
             super.exceptionCaught(ctx, e);
         }
     }
-
 }
