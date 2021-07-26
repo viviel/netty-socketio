@@ -17,7 +17,13 @@
 <script type="text/javascript">
     const host = 'http://localhost:8888';
     const ns = 'vv';
-    const socket = io(host + '/' + ns);
+    const opt = {
+        transports: ['polling']
+        // transports: ['websocket']
+    }
+    // const socket = io(host);
+    // const socket = io(host, opt);
+    const socket = io(host + '/' + ns, opt);
     addEvent();
 </script>
 </html>
